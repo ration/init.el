@@ -6,31 +6,12 @@
     (load-file "~/.local.el")
   (progn
     (setq git-home "c:/Program Files/Git/")
-    (setq dropbox-home "c:/Users/Tatu Lahtela/Dropbox/home/")	  
+    (setq dropbox-home "c:/Users/Tatu Lahtela/Dropbox/")	  
     ))
 
-
-
-;; Settings related to look
-
-(setq font-lock-use-default-fonts nil)
-(setq font-lock-use-default-colors nil)
-(setq default-frame-alist
-      '((foreground-color . "Wheat")
-        (cursor-color . "Orchid")
-        (background-color . "DarkSlateGray")))
-(set-face-background 'mode-line "Wheat")
-(set-face-foreground 'mode-line "DarkSlateGray")
-(set-face-background 'mode-line"LightSlateGray")
-(set-face-foreground 'mode-line "Wheat")
-
-(set-background-color "DarkSlateGray")
-(set-foreground-color  "Wheat")
-
-(scroll-bar-mode -1)
-(menu-bar-mode -1)
-(tool-bar-mode -1)
-(show-paren-mode 1)
+;; Set Custom file to another place
+(setq custom-file "~/.emacs.d/custom.el")
+(load custom-file 'noerror)
 
 ;; MELPA with use-package
 (require 'package)
@@ -45,19 +26,62 @@
 (require 'use-package-ensure)
 (setq use-package-always-ensure t)
 
+;;
 ;; Windows related configurations
+;;
+
+;; Load the ssh agent into environment variables if we have the pid file
+(defun load-agent-socket-env()
+  (interactive)
+  (defvar pid_file (concat (getenv "TEMP") "\\" "ssh_agent.pid"))
+  (if (file-exists-p pid_file)
+      (setenv "SSH_AUTH_SOCK" (save-excursion
+                                (with-temp-buffer
+                                  (insert-file-contents pid_file)
+                                  (goto-char 1)
+                                  (re-search-forward "SSH_AUTH_SOCK=\\(.*?\\);")
+                                  (match-string 1)
+                                  )))
+    (setenv "SSH_AGENT_PID" (save-excursion
+                              (with-temp-buffer
+                                (insert-file-contents pid_file)
+                                (goto-char 1)
+                                (re-search-forward "SSH_AGENT_PID=\\(.*?\\);")
+                                (match-string 1)
+                                )))))
+
+
+
+
+
 (if (string-equal system-type "windows-nt")
     (progn
       (setq find-program (concat git-home "/usr/bin/find.exe"))
       (setq grep-program (concat git-home "/bin/grep.exe"))
       (setq ispell-program-name "C:/Tatu/Apps/hunspell/bin/hunspell.exe")
-      ))
+      (setq helm-ag-base-command "c:/tatu/bin/ag --vimgrep")
+      (load-agent-socket-env)))
 
-;; Various package list
+;;
+;; Various random package list
+;;
 (use-package xml+)
 (require 'find-lisp)
+(use-package restclient)
+(use-package magit)
 
 
+(use-package company
+  :init
+  (add-hook 'after-init-hook 'global-company-mode))
+(use-package request)
+(use-package json-mode)
+(use-package powershell)
+(use-package try)
+
+(use-package helm-ag
+  :init (custom-set-variables
+ '(helm-follow-mode-persistent t)))
 ;;
 ;; Helm config
 ;;
@@ -86,29 +110,29 @@
           )))
 
 (use-package helm
-    :bind* (:map helm-map 
+    :bind (("M-x" . helm-M-x)
+	    ("C-x b" . helm-buffers-list)
+	    ("C-c f" . helm-recentf)
+	    :map helm-map 
                  ([tab] . helm-execute-if-single-persistent-action)
-                 ("C-i" . helm-execute-persistent-action)
+                 ("C-i" . helm-select-action)
                  ))
 
 (use-package helm-files
   :ensure f
-  :bind (:map helm-find-files-map
+  :bind ( ("C-x C-f" . helm-find-files)
+	 :map helm-find-files-map
               ("<C-backspace>" . helm-find-files-up-one-level)
-              ("<C-backspace>" . helm-find-files-up-one-level)
-              )
-  )
-
+              ))
 
 (use-package helm-swoop
+  :bind (("C-s" . helm-swoop))
   :config
+  (setq helm-swoop-speed-or-color t)
   (setq helm-swoop-pre-input-function (lambda () "")))
 
-(global-set-key (kbd "M-x") 'helm-M-x)
-(global-set-key (kbd "C-x b") 'helm-buffers-list)
-(global-set-key (kbd "C-x C-f") 'helm-find-files)
-(global-set-key (kbd "C-c f") 'helm-recentf)
-(global-set-key (kbd "C-s") 'helm-swoop)
+(use-package helm-org-rifle)
+
 (helm-mode 1)
 
 
@@ -131,7 +155,10 @@
 (recentf-mode 1)
 (setq recentf-max-menu-items 100)
 (setq recentf-max-saved-items 100)
-(run-at-time nil (* 5 60) 'recentf-save-list)
+(defun save-recentf-silently()
+  (let ((inhibit-message t))
+    (recentf-save-list)))
+(run-at-time nil (* 5 60) 'save-recentf-silently)
 
 
 ;; Kill words without copying them
@@ -148,6 +175,7 @@
   
 
 
+;; Global keyboard changes
 (global-set-key (kbd "M-k") 'kill-line-without-copy)
 (global-set-key (kbd "M-<up>") 'other-window)
 (defun cycle-backwards ()
@@ -155,7 +183,9 @@
   (other-window -1))
 (global-set-key (kbd "M-<down>") 'cycle-backwards)
 (global-set-key (kbd "M-<backspace>") 'backward-kill-word-without-copy)
+(global-set-key (kbd "M-z") 'zap-up-to-char)
 
+(setq enable-recursive-minibuffers 1)
 
 ;;
 ;; Org mode
@@ -165,10 +195,10 @@
 (use-package org-clock-today)
 
 (setq org-agenda-directory (concat dropbox-home "/Documents/Orgzly/"))
-;;(setq org-agenda-files
-;;      (find-lisp-find-files org-agenda-directory "\.org$"))
 (setq org-agenda-files
-   (list (concat dropbox-home "/Documents/Orgzly/todo.org")))
+      (find-lisp-find-files org-agenda-directory "\.org$"))
+;;(setq org-agenda-files
+;;   (list (concat dropbox-home "/Documents/Orgzly/todo.org")))
 
 (setq-default org-catch-invisible-edits 'smart)
 (setq org-default-notes-file (concat dropbox-home "/Documents/Orgzly/todo.org"))
@@ -248,4 +278,55 @@ If not, show simply the clocked time like 01:50. All Tasks"
 (bookmark-bmenu-list)
 (switch-to-buffer "*Bookmark List*")
 
+
+;;
+;; Company lsp (TODO, doesn't work)
+;;
+;;(use-package lsp-mode)
+;;(use-package lsp-ui)
+;;(use-package lsp-clients)
+;;(use-package lsp-intellij)
+;;
+;;(use-package company-lsp
+;;  :init
+;;  (push 'company-lsp company-backends)
+;;  :config
+;;  (add-hook 'java-mode-hook #'lsp-intellij-enable)
+;;
+;;  )
+;;
+
+
+
+
+;;
+;; Settings related to look
+;; 
+(defun theme-slate-grey (&optional frame)
+  "Set custom background color."
+  (with-selected-frame (or frame (selected-frame))
+    (set-background-color "DarkSlateGray")
+    (set-face-background 'mode-line "Wheat")
+    (set-face-foreground 'mode-line "DarkSlateGray")
+    (set-face-background 'mode-line"LightSlateGray")
+    (set-face-foreground 'mode-line "Wheat")
+    (set-background-color "DarkSlateGray")
+    (set-foreground-color  "Wheat")
+    ))  
+
+;(add-hook 'after-make-frame-functions 'theme-slate-grey)
+;(theme-slate-grey)
+
+;; (use-package dracula-theme)
+(use-package color-theme-sanityinc-tomorrow)
+(color-theme-sanityinc-tomorrow-eighties)
+
+(scroll-bar-mode -1)
+(menu-bar-mode -1)
+(tool-bar-mode -1)
+(show-paren-mode 1)
+
+(global-set-key [f1]  'goto-line)
+(global-set-key [f9]  'org-agenda-list)
+(global-set-key [f12]  'helm-ag)
 
