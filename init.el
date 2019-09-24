@@ -26,6 +26,11 @@
 (require 'use-package-ensure)
 (setq use-package-always-ensure t)
 
+(require 'server)
+(unless (server-running-p) (server-start))
+
+
+
 ;;
 ;; Windows related configurations
 ;;
@@ -35,6 +40,7 @@
   (interactive)
   (defvar pid_file (concat (getenv "TEMP") "\\" "ssh_agent.pid"))
   (if (file-exists-p pid_file)
+      (progn 
       (setenv "SSH_AUTH_SOCK" (save-excursion
                                 (with-temp-buffer
                                   (insert-file-contents pid_file)
@@ -48,7 +54,7 @@
                                 (goto-char 1)
                                 (re-search-forward "SSH_AGENT_PID=\\(.*?\\);")
                                 (match-string 1)
-                                )))))
+                                ))))))
 
 
 
@@ -60,7 +66,8 @@
       (setq grep-program (concat git-home "/bin/grep.exe"))
       (setq ispell-program-name "C:/Tatu/Apps/hunspell/bin/hunspell.exe")
       (setq helm-ag-base-command "c:/tatu/bin/ag --vimgrep")
-      (load-agent-socket-env)))
+))
+;;      (load-agent-socket-env)))
 
 ;;
 ;; Various random package list
@@ -68,16 +75,36 @@
 (use-package xml+)
 (require 'find-lisp)
 (use-package restclient)
-(use-package magit)
-
+(use-package magit
+  :init
+  (setq magit-refresh-status-buffer nil)
+)
+(use-package yasnippet)
+(use-package ssh-agency)
+(use-package shackle
+  :init
+  (require 'shackle)
+  (setq helm-display-function 'pop-to-buffer) ; make helm play nice
+  (setq helm-swoop-split-window-function 'display-buffer)
+  (add-to-list 'shackle-rules
+               '("\\`\\*helm.*?\\*\\'" :regexp t :align t :size 0.9))
+  (add-to-list 'shackle-rules
+               '("\\`\\*Helm.*?\\*\\'" :regexp t :align right :size 0.4))
+  :config
+  (shackle-mode t))
 
 (use-package company
   :init
-  (add-hook 'after-init-hook 'global-company-mode))
+  (add-hook 'after-init-hook 'global-company-mode)
+  (setq company-idle-delay 0.2))
 (use-package request)
 (use-package json-mode)
 (use-package powershell)
+(use-package org-mru-clock)
 (use-package try)
+(use-package dockerfile-mode)
+(use-package yafolding)
+(use-package org-analyzer)
 
 (use-package helm-ag
   :init (custom-set-variables
@@ -144,10 +171,7 @@
   :config
   (setq easy-jekyll-basedir (concat dropbox-home "git/blog/"))
   (setq easy-jekyll-url "https://lahtela.me")
-  (setq markdown-command 
-      "pandoc -f markdown -t html -s --mathjax --highlight-style=pygments")
-
-  )
+  (setq markdown-command "pandoc -f markdown -t html -s --mathjax --highlight-style=pygments"))
 
 
 ;; Recentf stores opened files into the recents history
@@ -175,22 +199,13 @@
   
 
 
-;; Global keyboard changes
-(global-set-key (kbd "M-k") 'kill-line-without-copy)
-(global-set-key (kbd "M-<up>") 'other-window)
-(defun cycle-backwards ()
-  (interactive)
-  (other-window -1))
-(global-set-key (kbd "M-<down>") 'cycle-backwards)
-(global-set-key (kbd "M-<backspace>") 'backward-kill-word-without-copy)
-(global-set-key (kbd "M-z") 'zap-up-to-char)
 
 (setq enable-recursive-minibuffers 1)
 
 ;;
 ;; Org mode
 ;; 
-
+(setq calendar-week-start-day 1)
 (use-package org-super-agenda)
 (use-package org-clock-today)
 
@@ -203,6 +218,7 @@
 (setq-default org-catch-invisible-edits 'smart)
 (setq org-default-notes-file (concat dropbox-home "/Documents/Orgzly/todo.org"))
 (setq org-refile-targets '((org-agenda-files . (:maxlevel . 6))))
+(add-hook 'auto-save-hook 'org-save-all-org-buffers)
 
 
 (defun x-org-clock-sum-today ()
@@ -255,9 +271,15 @@ If not, show simply the clocked time like 01:50. All Tasks"
 ;; Don't taint directories with backup files
 (defvar backup-dir (concat "~/emacsbak/" (user-login-name) "/"))
 (setq backup-directory-alist (list (cons "." backup-dir)))
+(setq auto-save-list-file-prefix
+      (concat backup-dir ".auto-saves-"))
+(setq auto-save-file-name-transforms
+      `((".*" ,backup-dir t)))
 
 
+;;
 ;; Various helper functions
+;;
 (defun sudo-save ()
   "Save file with sudo"
   (interactive)
@@ -266,7 +288,11 @@ If not, show simply the clocked time like 01:50. All Tasks"
     (write-file (concat "/sudo:root@localhost:" buffer-file-name))))
 
 
-
+(defun goto-dir ()
+  "Go to a given common directory in dired"
+  (interactive)
+  (setq dirs '(c:/users/xxlahtft/Downloads/ C:/Tatu/git/ C:/temp/))
+  (helm-find-files-1 (completing-read ": " dirs)))
 
 ;;
 ;; Default to bookmark menu
@@ -282,21 +308,29 @@ If not, show simply the clocked time like 01:50. All Tasks"
 ;;
 ;; Company lsp (TODO, doesn't work)
 ;;
-;;(use-package lsp-mode)
-;;(use-package lsp-ui)
-;;(use-package lsp-clients)
-;;(use-package lsp-intellij)
+(use-package lsp-mode)
+(use-package lsp-ui)
+(use-package treemacs)
+(use-package cl)
+(use-package projectile)
+(use-package lsp-java)
+;; x(use-package lsp-intellij)
 ;;
-;;(use-package company-lsp
-;;  :init
-;;  (push 'company-lsp company-backends)
-;;  :config
-;;  (add-hook 'java-mode-hook #'lsp-intellij-enable)
+(use-package company-lsp
+  :init
+  (push 'company-lsp company-backends)
+  :config
+  (add-hook 'java-mode-hook #'lsp))
 ;;
 ;;  )
 ;;
 
-
+(use-package dap-mode
+  :config
+  (require 'dap-java)
+  (dap-mode 1)
+  (dap-ui-mode t))
+(use-package helm-projectile)
 
 
 ;;
@@ -325,8 +359,39 @@ If not, show simply the clocked time like 01:50. All Tasks"
 (menu-bar-mode -1)
 (tool-bar-mode -1)
 (show-paren-mode 1)
+(global-linum-mode 1)
+
+
+
+(setq-default frame-title-format '("%f [%m]"))
+
+;;
+;; Global key sets
+;; 
 
 (global-set-key [f1]  'goto-line)
-(global-set-key [f9]  'org-agenda-list)
-(global-set-key [f12]  'helm-ag)
+(global-set-key [f3]  'helm-recentf)
+(global-set-key [f4]  'helm-ag)
 
+(global-set-key [f5]  'compile)
+(global-set-key [f6]  'next-error)
+(global-set-key [f8]  'magit-status)
+
+(global-set-key [f9]  'org-agenda-list)
+(global-set-key [f10]  'helm-org-rifle)
+(global-set-key [f11]  'org-mru-clock-in)
+(global-set-key [f12]  'org-clock-goto)
+
+(global-set-key (kbd "M-k") 'kill-line-without-copy)
+(global-set-key (kbd "M-<up>") 'other-window)
+(global-set-key (kbd "C-§") 'whitespace-mode)
+
+(defun cycle-backwards ()
+  (interactive)
+  (other-window -1))
+
+(global-set-key (kbd "M-<down>") 'cycle-backwards)
+(global-set-key (kbd "M-<backspace>") 'backward-kill-word-without-copy)
+(global-set-key (kbd "M-z") 'zap-up-to-char)
+(global-set-key (kbd "<M-S-up>") 'scroll-down-line)
+(global-set-key (kbd "<M-S-down>") 'scroll-up-line)
