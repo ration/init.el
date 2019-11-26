@@ -29,6 +29,7 @@
 (require 'server)
 (unless (server-running-p) (server-start))
 
+(setq compilation-ask-about-save nil)
 
 
 ;;
@@ -105,6 +106,9 @@
 (use-package dockerfile-mode)
 (use-package yafolding)
 (use-package org-analyzer)
+(use-package which-key
+  :config (which-key-mode))
+(use-package goto-last-change)
 
 (use-package helm-ag
   :init (custom-set-variables
@@ -140,6 +144,7 @@
     :bind (("M-x" . helm-M-x)
 	    ("C-x b" . helm-buffers-list)
 	    ("C-c f" . helm-recentf)
+	    ("M-y" . helm-show-kill-ring)
 	    :map helm-map 
                  ([tab] . helm-execute-if-single-persistent-action)
                  ("C-i" . helm-select-action)
@@ -208,16 +213,36 @@
 (setq calendar-week-start-day 1)
 (use-package org-super-agenda)
 (use-package org-clock-today)
-
+(use-package ox-gfm)
 (setq org-agenda-directory (concat dropbox-home "/Documents/Orgzly/"))
 (setq org-agenda-files
       (find-lisp-find-files org-agenda-directory "\.org$"))
+
+(setq org-capture-templates
+   (quote
+    (("b" "Bloggging" entry
+      (file (concat dropbox-home "/Documents/Orgzly/blog.org"))
+      "")
+     ("w" "Work Task" entry
+      (file "c:/Tatu/doc/todo.org")
+      "")
+     ("d" "Daily" entry
+      (file+olp "c:/Tatu/doc/timetrack.org" "Vincit" "Meetings" "Dailys")
+      "**** Daily %T" :clock-in t)
+     ("m" "Meeting" entry
+      (file+olp "c:/Tatu/doc/timetrack.org" "Vincit" "Meetings")
+      "*** $?" :clock-in t)
+     
+     ("t" "Generic TODO" entry
+      (file "c:/tatu/Dropbox/Documents/Orgzly/todo.org")
+      "* TODO"))))
 ;;(setq org-agenda-files
 ;;   (list (concat dropbox-home "/Documents/Orgzly/todo.org")))
 
 (setq-default org-catch-invisible-edits 'smart)
 (setq org-default-notes-file (concat dropbox-home "/Documents/Orgzly/todo.org"))
 (setq org-refile-targets '((org-agenda-files . (:maxlevel . 6))))
+
 (add-hook 'auto-save-hook 'org-save-all-org-buffers)
 
 
@@ -304,33 +329,69 @@ If not, show simply the clocked time like 01:50. All Tasks"
 (bookmark-bmenu-list)
 (switch-to-buffer "*Bookmark List*")
 
+(use-package cl)
+(use-package pcre2el)
+(use-package treemacs)
 
 ;;
-;; Company lsp (TODO, doesn't work)
+;; plantuml
+;;
+(setq org-plantuml-jar-path
+      (expand-file-name (concat dropbox-home "/home/elisp/java-libs/plantuml.jar")))
+
+(load (expand-file-name (concat dropbox-home "/home/elisp/ob-plantuml.el")))
+
+;; Reload images when babels are executed
+(defun shk-fix-inline-images ()
+  (when org-inline-image-overlays
+    (org-redisplay-inline-images)))
+
+(with-eval-after-load 'org
+  (add-hook 'org-babel-after-execute-hook 'shk-fix-inline-images))
+
+;;(org-babel-do-load-languages
+;; 'org-babel-load-languages
+;; '((emacs-lisp . t)
+;;   (plantuml . t)))
+
+
+(defun my-org-confirm-babel-evaluate (lang body)
+  (not (string= lang "plantuml")))  ; don't ask for ditaa
+(setq org-confirm-babel-evaluate 'my-org-confirm-babel-evaluate)
+
+
+(require 'ob-plantuml)
+
+
+
+
+;;
+
 ;;
 (use-package lsp-mode)
 (use-package lsp-ui)
-(use-package treemacs)
-(use-package cl)
-(use-package projectile)
-(use-package lsp-java)
+;; (use-package projectile)
+;; (use-package lsp-java)
+;; 
+
 ;; x(use-package lsp-intellij)
 ;;
-(use-package company-lsp
-  :init
-  (push 'company-lsp company-backends)
-  :config
-  (add-hook 'java-mode-hook #'lsp))
+;; (use-package company-lsp
+;;   :defer t
+;;   :init
+;;   (push 'company-lsp company-backends)
+;;   :config
+;;   (add-hook 'java-mode-hook #'lsp))
 ;;
 ;;  )
 ;;
 
-(use-package dap-mode
-  :config
-  (require 'dap-java)
-  (dap-mode 1)
-  (dap-ui-mode t))
-(use-package helm-projectile)
+;; (use-package dap-mode
+;;   :config
+;;   (require 'dap-java)
+;;   (dap-mode 1)
+;;   (dap-ui-mode t))
+;; (use-package helm-projectile)
 
 
 ;;
@@ -395,3 +456,7 @@ If not, show simply the clocked time like 01:50. All Tasks"
 (global-set-key (kbd "M-z") 'zap-up-to-char)
 (global-set-key (kbd "<M-S-up>") 'scroll-down-line)
 (global-set-key (kbd "<M-S-down>") 'scroll-up-line)
+
+(global-set-key (kbd "M-C-(") (lambda () (interactive) (scroll-down 10)))
+(global-set-key (kbd "M-C-)") (lambda () (interactive) (scroll-up 10)))
+
