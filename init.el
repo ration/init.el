@@ -3,11 +3,11 @@
 ;; 
 
 (if (file-exists-p "~/.local.el")
-    (load-file "~/.local.el")
-  (progn
-    (setq git-home "c:/Program Files/Git/")
-    (setq dropbox-home "c:/Users/Tatu Lahtela/Dropbox/")	  
-    ))
+    (load-file "~/.local.el"))
+;;  (progn
+;;;    (setq git-home "c:/Program Files/Git/")
+;;    (setq dropbox-home "c:/Users/Tatu Lahtela/Dropbox/")	  
+;;    ))
 
 ;; Set Custom file to another place
 (setq custom-file "~/.emacs.d/custom.el")
@@ -171,12 +171,12 @@
 ;;
 ;; Blogging
 ;;
-
-(use-package easy-jekyll
-  :config
-  (setq easy-jekyll-basedir (concat dropbox-home "git/blog/"))
-  (setq easy-jekyll-url "https://lahtela.me")
-  (setq markdown-command "pandoc -f markdown -t html -s --mathjax --highlight-style=pygments"))
+(if (boundp 'dropbox-home)
+    (use-package easy-jekyll
+      :config
+      (setq easy-jekyll-basedir (concat dropbox-home "git/blog/"))
+      (setq easy-jekyll-url "https://lahtela.me")
+      (setq markdown-command "pandoc -f markdown -t html -s --mathjax --highlight-style=pygments")))
 
 
 ;; Recentf stores opened files into the recents history
@@ -214,9 +214,10 @@
 (use-package org-super-agenda)
 (use-package org-clock-today)
 (use-package ox-gfm)
-(setq org-agenda-directory (concat dropbox-home "/Documents/Orgzly/"))
-(setq org-agenda-files
-      (find-lisp-find-files org-agenda-directory "\.org$"))
+(if (boundp 'dropbox-home)
+    (progn (setq org-agenda-directory (concat dropbox-home "/Documents/Orgzly/"))
+	   (setq org-agenda-files
+		 (find-lisp-find-files org-agenda-directory "\.org$"))
 
 (setq org-capture-templates
    (quote
@@ -241,7 +242,7 @@
 
 (setq-default org-catch-invisible-edits 'smart)
 (setq org-default-notes-file (concat dropbox-home "/Documents/Orgzly/todo.org"))
-(setq org-refile-targets '((org-agenda-files . (:maxlevel . 6))))
+(setq org-refile-targets '((org-agenda-files . (:maxlevel . 6))))))
 
 (add-hook 'auto-save-hook 'org-save-all-org-buffers)
 
@@ -336,10 +337,12 @@ If not, show simply the clocked time like 01:50. All Tasks"
 ;;
 ;; plantuml
 ;;
+(if (boundp 'dropbox-home)
+    (progn 
 (setq org-plantuml-jar-path
       (expand-file-name (concat dropbox-home "/home/elisp/java-libs/plantuml.jar")))
 
-(load (expand-file-name (concat dropbox-home "/home/elisp/ob-plantuml.el")))
+(load (expand-file-name (concat dropbox-home "/home/elisp/ob-plantuml.el")))))
 
 ;; Reload images when babels are executed
 (defun shk-fix-inline-images ()
@@ -416,7 +419,8 @@ If not, show simply the clocked time like 01:50. All Tasks"
 (use-package color-theme-sanityinc-tomorrow)
 (color-theme-sanityinc-tomorrow-eighties)
 
-(scroll-bar-mode -1)
+(if (boundp 'scroll-bar-mode)
+    (scroll-bar-mode -1))
 (menu-bar-mode -1)
 (tool-bar-mode -1)
 (show-paren-mode 1)
@@ -459,4 +463,3 @@ If not, show simply the clocked time like 01:50. All Tasks"
 
 (global-set-key (kbd "M-C-(") (lambda () (interactive) (scroll-down 10)))
 (global-set-key (kbd "M-C-)") (lambda () (interactive) (scroll-up 10)))
-
