@@ -226,63 +226,53 @@
 
 * Helm
 #+BEGIN_SRC emacs-lisp
-(defun helm-execute-if-single-persistent-action (&optional attr split-onewindow)
-  "Execute persistent action if the candidate list is less than 2 OR if theres no input and only one non trivial thing to select from"
-  (interactive)
-  (with-helm-alive-p
-    (cond ((and (string= helm-input helm-ff-default-directory) (eq (helm-get-candidate-number) 3))
-           (progn
-             (helm-next-line)
-             (helm-next-line)
-             (helm-execute-persistent-action))
-           )
-          ((> (helm-get-candidate-number) 2) (double-flash-mode-line))
-          (t (helm-execute-persistent-action))
-          )))
-(use-package helm
-  :config
-  (setq helm-ff-allow-non-existing-file-at-point t)
+  (defun helm-execute-if-single-persistent-action (&optional attr split-onewindow)
+    "Execute persistent action if the candidate list is less than 2 OR if theres no input and only one non trivial thing to select from"
+    (interactive)
+    (with-helm-alive-p
+      (cond ((and (string= helm-input helm-ff-default-directory) (eq (helm-get-candidate-number) 3))
+             (progn
+               (helm-next-line)
+               (helm-next-line)
+               (helm-execute-persistent-action))
+             )
+            ((> (helm-get-candidate-number) 2) (double-flash-mode-line))
+            (t (helm-execute-persistent-action))
+            )))
+  (use-package helm
+    :config
+    (setq helm-ff-allow-non-existing-file-at-point t)
     :bind (("M-x" . helm-M-x)
-	    ("C-x b" . helm-buffers-list)
-	    ("C-c f" . helm-recentf)
-	    ("M-y" . helm-show-kill-ring)
-	    :map helm-map 
-                 ([tab] . helm-execute-if-single-persistent-action)
-                 ("C-i" . helm-select-action)))
-(use-package helm-ag
-  :init (custom-set-variables
- '(helm-follow-mode-persistent t)))
+           ("C-x b" . helm-buffers-list)
+           ("C-c f" . helm-recentf)
+           ("M-y" . helm-show-kill-ring)
+           :map helm-map 
+           ([tab] . helm-execute-if-single-persistent-action)
+           ("C-i" . helm-select-action)))
+  (use-package helm-ag
+    :init (custom-set-variables
+           '(helm-follow-mode-persistent t)))
 
-(use-package helm-files
-  :ensure f
-  :bind (("C-x C-f" . helm-find-files)
-	  :map helm-find-files-map
-	  ("C-," . my-helm-ff-switch-to-fzf)
-	  ("<C-backspace>" . helm-find-files-up-one-level))
-  :config
-      (unless helm-source-find-files
+  (use-package helm-files
+    :ensure f
+    :bind (("C-x C-f" . helm-find-files)
+           :map helm-find-files-map
+           ("C-," . my-helm-ff-switch-to-fzf)
+           ("<C-backspace>" . helm-find-files-up-one-level))
+    :config
+    (unless helm-source-find-files
       (setq helm-source-find-files (helm-make-source
-                                    "Find Files" 'helm-source-ffiles)))
-      (helm-add-action-to-source "C-, Switch to fzf" #'my-helm-run-fzf helm-source-find-files))
-
-
-
-
-(use-package helm-swoop
-  :bind (("C-s" . helm-swoop))
-  :config
-  (setq helm-swoop-speed-or-color nil)
-  (setq helm-swoop-pre-input-function (lambda () ""))
-  (bind-keys :map helm-swoop-map
-             ("C-s" . kill-whole-line)))
-
-  
-
-;  (Setq helm-swoop-pre-input-function (lambda () "")))
-
-(use-package helm-org-rifle)
-
-(helm-mode 1)
+                                       "Find Files" 'helm-source-ffiles)))
+    (helm-add-action-to-source "C-, Switch to fzf" #'my-helm-run-fzf helm-source-find-files))
+  (use-package helm-swoop
+    :bind (("C-s" . helm-swoop))
+    :config
+    (setq helm-swoop-speed-or-color nil)
+    (setq helm-swoop-pre-input-function (lambda () ""))
+    (bind-keys :map helm-swoop-map
+               ("C-s" . kill-whole-line)))
+  (use-package helm-org-rifle)
+  (helm-mode 1)
 #+END_SRC
 * Organizing and finding files and buffers
 ** Company
@@ -636,8 +626,7 @@ If not, show simply the clocked time like 01:50. All Tasks"
 
 #+END_SRC
 * Magit
-#+BEGIN_SRC emacs-lisp
-;;(use-package github-review)
+#+BEGIN_SRC emacs-lisp 
 (use-package magit)
 (use-package forge)
 #+END_SRC
