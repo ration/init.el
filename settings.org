@@ -1,0 +1,733 @@
+* Load custom el and environment specific settings
+#+BEGIN_SRC emacs-lisp
+  (let ((local (expand-file-name "local.el" user-emacs-directory)))
+    (if (file-exists-p local)
+        (load-file local)))
+
+  ;; Set Custom file to another place
+  (setq custom-file (expand-file-name "custom.el" user-emacs-directory))
+  (load custom-file 'noerror)
+
+#+END_SRC
+* Package management
+** MELPA
+#+BEGIN_SRC emacs-lisp
+  (require 'package)
+  (setq package-enable-startup nil)
+  (add-to-list 'package-archives
+               '("melpa" . "https://melpa.org/packages/"))
+  (package-initialize)
+  (unless (package-installed-p 'use-package)
+    (package-refresh-contents)
+    (package-install 'use-package))
+
+  (require 'use-package-ensure)
+  (setq use-package-always-ensure t)
+
+#+END_SRC
+** QUELPA
+#+BEGIN_SRC emacs-lisp
+(use-package quelpa)
+(use-package quelpa-use-package)
+#+END_SRC
+** Trying packages
+#+BEGIN_SRC emacs-lisp
+(use-package try)
+#+END_SRC
+* UI Look and feel. Note some of this is in early-init.el
+** For nostalgia my old theme
+#+BEGIN_SRC emacs-lisp :tangle no
+  (defun theme-slate-grey (&optional frame)
+    "Set custom background color."
+    (with-selected-frame (or frame (selected-frame))
+      (set-background-color "DarkSlateGray")
+      (set-face-background 'mode-line "Wheat")
+      (set-face-foreground 'mode-line "DarkSlateGray")
+      (set-face-background 'mode-line"LightSlateGray")
+      (set-face-foreground 'mode-line "Wheat")
+      (set-background-color "DarkSlateGray")
+      (set-foreground-color  "Wheat")
+      ))
+#+END_SRC
+** Theme
+#+BEGIN_SRC emacs-lisp
+  (use-package color-theme-sanityinc-tomorrow
+    :config
+    (color-theme-sanityinc-tomorrow-eighties))
+#+END_SRC
+
+** Use global-display-numbers, display path in title
+#+BEGIN_SRC emacs-lisp
+(if (version<= "26" emacs-version)
+    (global-display-line-numbers-mode))
+(setq-default frame-title-format '("%f [%m] - emacs]"))
+#+END_SRC
+* Buffer manipulation aides
+** Smartparens
+#+BEGIN_SRC emacs-lisp
+(use-package smartparens
+  :config
+  (add-hook 'prog-mode-hook 'smartparens-mode)
+  :init
+  (bind-key "<C-down>" #'sp-forward-sexp smartparens-mode-map)
+  (bind-key "<C-up>" #'sp-backward-sexp smartparens-mode-map)
+  (global-unset-key "\C-o")
+  (bind-key "\C-o" #'sp-select-next-thing smartparens-mode-map))
+#+END_SRC
+
+** Flash modeline
+#+BEGIN_SRC emacs-lisp
+(defun double-flash-mode-line ()
+  "Flash the modeline"
+  (let ((flash-sec (/ 1.0 20)))
+    (invert-face 'mode-line)
+    (run-with-timer flash-sec nil #'invert-face 'mode-line)
+    (run-with-timer (* 2 flash-sec) nil #'invert-face 'mode-line)
+    (run-with-timer (* 3 flash-sec) nil #'invert-face 'mode-line)))
+#+END_SRC
+** Rainbow delimeters (Not enabled anywhere by default)
+#+BEGIN_SRC emacs-lisp
+(use-package rainbow-delimiters)
+#+END_SRC
+** Company
+#+BEGIN_SRC emacs-lisp
+(use-package company
+  :ensure t
+  :config
+  (setq company-show-numbers t)
+  (setq company-tooltip-align-annotations t)
+  ;; invert the navigation direction if the the completion popup-isearch-match
+  ;; is displayed on top (happens near the bottom of windows)
+  (setq company-tooltip-flip-when-above t)
+  (global-company-mode))
+ 
+(use-package company-quickhelp
+  :ensure t
+  :init
+  (company-quickhelp-mode 1)
+  (use-package pos-tip
+    :ensure t))
+#+END_SRC
+
+** Yafolding/sippet
+#+BEGIN_SRC emacs-lisp
+(use-package yafolding)
+(use-package yasnippet)
+#+END_SRC
+** Diff-hl (find uncommitted changes)
+#+BEGIN_SRC emacs-lisp
+(use-package diff-hl
+  :config
+    (add-hook 'prog-mode-hook 'smartparens-mode))
+#+END_SRC
+** Which key
+#+BEGIN_SRC emacs-lisp
+(use-package which-key
+  :config (which-key-mode))
+#+END_SRC
+* File formatting stuff
+#+BEGIN_SRC emacs-lisp
+(setq-default show-trailing-whitespace t)
+(setq-default fill-column 120)
+#+END_SRC
+** Editorconfig
+#+BEGIN_SRC emacs-lisp
+(use-package editorconfig
+  :config
+  (editorconfig-mode 1))
+#+END_SRC
+* Enable narrowing (excl. goal-column)
+#+BEGIN_SRC emacs-lisp
+  (put 'narrow-to-defun  'disabled nil)
+  (put 'narrow-to-page   'disabled nil)
+  (put 'narrow-to-region 'disabled nil)
+  (unbind-key (kbd "C-x C-n"))
+#+END_SRC
+* Make sure server is running
+#+BEGIN_SRC emacs-lisp
+(require 'server)
+(unless (server-running-p) (server-start))
+#+END_SRC
+* Google this
+#+BEGIN_SRC emacs-lisp
+(use-package google-this)
+#+END_SRC
+* Compile without save
+#+BEGIN_SRC emacs-lisp
+(setq compilation-ask-about-save nil)
+#+END_SRC
+* Create backups in separate directory
+#+BEGIN_SRC emacs-lisp
+(defvar backup-dir (concat "~/emacsbak/" (user-login-name) "/"))
+(setq backup-directory-alist (list (cons "." backup-dir)))
+(setq auto-save-list-file-prefix
+      (concat backup-dir ".auto-saves-"))
+(setq auto-save-file-name-transforms
+      `((".*" ,backup-dir t)))
+
+#+END_SRC
+* Buffer manipulation
+** Allow minibuffer in minibuffer
+#+BEGIN_SRC emacs-lisp
+(setq enable-recursive-minibuffers 1)
+#+END_SRC
+** Kill stuff without putting into kill-ring
+#+BEGIN_SRC emacs-lisp
+(defun kill-line-without-copy ()
+  "Deletes from current position to end of line without putting into the kill-ring."
+  (interactive)
+  (delete-region (point) (line-end-position))
+  )
+
+(defun backward-kill-word-without-copy (arg)
+  "Deletes from current backwards word without putting into the kill-ring."
+  (interactive "p")
+  (delete-region (point) (progn (forward-word (- arg)) (point))))
+#+END_SRC
+** Bufler
+#+BEGIN_SRC emacs-lisp
+(use-package bufler)
+#+END_SRC
+** Ivy
+#+BEGIN_SRC emacs-lisp
+(use-package ivy)
+#+END_SRC
+** Copy filename to kill-ring
+#+BEGIN_SRC emacs-lisp
+  (defun filename ()
+      "Copy the full path of the current buffer."
+      (interactive)
+      (kill-new (buffer-file-name (window-buffer (minibuffer-selected-window)))))
+#+END_SRC
+** Quick chmod buffer and chmod u+x buffer
+#+BEGIN_SRC emacs-lisp
+  (defun chmod-buffer()
+    (interactive)
+    (let ((current-buffer (buffer-file-name)))
+      (chmod current-buffer (read-file-modes "mode: " current-buffer))))
+   (defun chmod-buffer-user-executable ()
+   (interactive)
+    (let* ((current-buffer (buffer-file-name))
+           (modes (or (if current-buffer (file-modes current-buffer) 0)
+                  (error "File not found. Not saved?"))))
+      (chmod current-buffer (file-modes-symbolic-to-number "u+x" modes) )))
+
+#+END_SRC
+** sudo-save
+#+BEGIN_SRC emacs-lisp
+(defun sudo-save ()
+  "Save file with sudo"
+  (interactive)
+  (if (not buffer-file-name)
+      (write-file (concat "/sudo:root@localhost:" (ido-read-file-name "File:")))
+    (write-file (concat "/sudo:root@localhost:" buffer-file-name))))
+
+#+END_SRC
+
+* Helm
+#+BEGIN_SRC emacs-lisp
+(defun helm-execute-if-single-persistent-action (&optional attr split-onewindow)
+  "Execute persistent action if the candidate list is less than 2 OR if theres no input and only one non trivial thing to select from"
+  (interactive)
+  (with-helm-alive-p
+    (cond ((and (string= helm-input helm-ff-default-directory) (eq (helm-get-candidate-number) 3))
+           (progn
+             (helm-next-line)
+             (helm-next-line)
+             (helm-execute-persistent-action))
+           )
+          ((> (helm-get-candidate-number) 2) (double-flash-mode-line))
+          (t (helm-execute-persistent-action))
+          )))
+(use-package helm
+  :config
+  (setq helm-ff-allow-non-existing-file-at-point t)
+    :bind (("M-x" . helm-M-x)
+	    ("C-x b" . helm-buffers-list)
+	    ("C-c f" . helm-recentf)
+	    ("M-y" . helm-show-kill-ring)
+	    :map helm-map 
+                 ([tab] . helm-execute-if-single-persistent-action)
+                 ("C-i" . helm-select-action)))
+(use-package helm-ag
+  :init (custom-set-variables
+ '(helm-follow-mode-persistent t)))
+
+(use-package helm-files
+  :ensure f
+  :bind (("C-x C-f" . helm-find-files)
+	  :map helm-find-files-map
+	  ("C-," . my-helm-ff-switch-to-fzf)
+	  ("<C-backspace>" . helm-find-files-up-one-level))
+  :config
+      (unless helm-source-find-files
+      (setq helm-source-find-files (helm-make-source
+                                    "Find Files" 'helm-source-ffiles)))
+      (helm-add-action-to-source "C-, Switch to fzf" #'my-helm-run-fzf helm-source-find-files))
+
+
+
+
+(use-package helm-swoop
+  :bind (("C-s" . helm-swoop))
+  :config
+  (setq helm-swoop-speed-or-color nil)
+  (setq helm-swoop-pre-input-function (lambda () ""))
+  (bind-keys :map helm-swoop-map
+             ("C-s" . kill-whole-line)))
+
+  
+
+;  (Setq helm-swoop-pre-input-function (lambda () "")))
+
+(use-package helm-org-rifle)
+
+(helm-mode 1)
+#+END_SRC
+* Organizing and finding files and buffers
+** Company
+#+BEGIN_SRC emacs-lisp
+(use-package company
+  :init
+  (add-hook 'after-init-hook 'global-company-mode)
+  (setq company-idle-delay 0.2)
+  (setq company-dabbrev-downcase nil))
+(use-package request)
+#+END_SRC
+** Projectile
+#+BEGIN_SRC emacs-lisp
+(use-package projectile
+  :config
+  (setq-default helm-locate-project-list local-projects))
+#+END_SRC
+** Treemacs (disabled)
+#+BEGIN_SRC emacs-lisp :tangle no
+(use-package treemacs)
+(use-package treemacs-projectile
+  :after treemacs projectile
+)
+#+END_SRC
+** Springboard
+#+BEGIN_SRC emacs-lisp
+(use-package springboard)
+#+END_SRC
+** recentf: Keep opened files history
+#+BEGIN_SRC emacs-lisp
+(recentf-mode 1)
+(setq recentf-max-menu-items 100)
+(setq recentf-max-saved-items 100)
+(defun save-recentf-silently()
+  (let ((inhibit-message t))
+    (recentf-save-list)))
+(run-at-time nil (* 5 60) 'save-recentf-silently)
+#+END_SRC
+** goto-last-change
+#+BEGIN_SRC emacs-lisp
+(use-package goto-last-change)
+#+END_SRC
+
+** Fuzzy find files (fzf). Bind it to helm-ff
+#+BEGIN_SRC emacs-lisp
+(use-package fzf
+  :init
+  (global-set-key (kbd "C-c g") (lambda () (interactive)
+			    (fzf/start "~"))))
+(defun my-helm-run-fzf (candidate)
+  (interactive)
+  (let ((helm-current-dir (file-name-directory (helm-get-selection))))
+      (fzf/start helm-current-dir)))
+
+(defun my-helm-ff-switch-to-fzf ()
+  "Stop helm find-files and use fzf"
+  (interactive)
+  (with-helm-alive-p
+    (helm-exit-and-execute-action 'my-helm-run-fzf)))
+
+
+#+END_SRC
+* Org Mode
+#+BEGIN_SRC emacs-lisp
+ (require 'find-lisp)
+  (use-package org-mru-clock)
+  (setq calendar-week-start-day 1)
+  (use-package org-super-agenda)
+  (use-package org-clock-today)
+
+  (use-package org-journal
+    :init
+    (setq org-journal-enable-encryption t)
+    (setq org-journal-dir (concat dropbox-home "Org/Journal"))
+    (setq org-journal-file-type "weekly")
+    (setq org-journal-file-format "%Y-%m-%d.org.gpg")
+    (setq org-journal-date-format "%y-%m-%d, %A"))
+
+  (use-package ox-gfm)
+  (setq org-agenda-directory (concat dropbox-home "/Org/"))
+  (setq org-agenda-files
+            (find-lisp-find-files org-agenda-directory "\.org$"))
+
+  (setq-default org-catch-invisible-edits 'smart)
+  (setq org-default-notes-file (concat dropbox-home "/Documents/Orgzly/todo.org"))
+  (setq org-refile-targets '((org-agenda-files . (:maxlevel . 6))))
+
+  (add-hook 'auto-save-hook 'org-save-all-org-buffers)
+  (add-hook 'org-mode-hook 'flyspell-mode)
+#+END_SRC
+** Plantuml
+#+BEGIN_SRC emacs-lisp
+  (defun my-org-confirm-babel-evaluate (lang body)
+    (not (string= lang "plantuml")))  ; don't ask for ditaa
+  (setq org-confirm-babel-evaluate 'my-org-confirm-babel-evaluate)
+  (require 'ob-plantuml)
+  (setq org-plantuml-jar-path
+        (expand-file-name (concat dropbox-home "/home/elisp/java-libs/plantuml.jar")))
+
+  (load (expand-file-name (concat dropbox-home "/home/elisp/ob-plantuml.el")))
+#+END_SRC
+
+** Org clock stuff
+#+BEGIN_SRC emacs-lisp
+(defun x-org-clock-sum-today ()
+  "Visit each file in `org-agenda-files' and return the total time of today's
+clocked tasks in minutes."
+  (let ((files (org-agenda-files))
+        (total 0))
+    (org-agenda-prepare-buffers files)
+    (dolist (file files)
+      (with-current-buffer (find-buffer-visiting file)
+        (setq total (+ total (org-clock-sum-today)))))
+    total))
+(defun x-org-clock-get-clock-string-today ()
+  "Form a clock-string, that will be shown in the mode line.
+If an effort estimate was defined for the current item, use
+01:30/01:50 format (clocked/estimated).
+If not, show simply the clocked time like 01:50. All Tasks"
+  (let ((clocked-time (x-org-clock-sum-today)))
+    (if org-clock-effort
+	(let* ((effort-in-minutes (org-duration-to-minutes org-clock-effort))
+	       (work-done-str
+		(propertize (org-duration-from-minutes clocked-time)
+			    'face
+			    (if (and org-clock-task-overrun
+				     (not org-clock-task-overrun-text))
+				'org-mode-line-clock-overrun
+			      'org-mode-line-clock)))
+	       (effort-str (org-duration-from-minutes effort-in-minutes)))
+	  (format (propertize " [%s/%s] (%s)" 'face 'org-mode-line-clock)
+		  work-done-str effort-str org-clock-heading))
+      (format (propertize " [%s] (%s)" 'face 'org-mode-line-clock)
+	      (org-duration-from-minutes clocked-time)
+	      org-clock-heading))))
+(defun current-clock-time-to-file ()
+   (interactive)
+   (with-temp-file "~/.emacs.d/.task"
+     (if (org-clocking-p)
+       (insert (x-org-clock-get-clock-string-today))
+       (insert ""))))
+(run-with-timer 1 60 'current-clock-time-to-file)
+(add-hook 'org-clock-in-hook 'current-clock-time-to-file)
+(add-hook 'org-clock-out-hook 'current-clock-time-to-file)
+
+
+#+END_SRC
+** org-clubhouse
+#+BEGIN_SRC emacs-lisp
+(use-package org-clubhouse
+  :quelpa (org-clubhouse :fetcher github
+          :repo "glittershark/org-clubhouse")
+  :init (setq org-clubhouse-state-alist
+      '(("TODO"   . "Backlog")
+        ("ACTIVE" . "In Development")
+        ("PENDING" . "Pending")
+        ("REVIEW"   . "Ready for Review")
+        ("DEPLOY"   . "Ready for Deploy")
+        ("DONE"   . "Completed"))))
+#+END_SRC
+** Emphasis
+#+BEGIN_SRC emacs-lisp
+(setq org-emphasis-alist '(
+			  ("/"  (:foreground "red" :background: "yellow"))
+			  ("\""  (:foreground "red" :background: "yellow"))
+			  ("/" italic "<i>" "</i>")
+			  ("_" underline "<span style=\"text-decoration:underline;\">" "</span>")
+			  ("-" (:overline t) "<span style=\"text-decoration:overline;\">" "</span>")
+			  ("=" org-code "<code>" "</code>" verbatim)
+			  ("*" org-verbatim "<code>" "</code>" verbatim)
+			  ("+" (:strike-through t) "<del>" "</del>")))
+(setq org-hide-emphasis-markers -1)
+#+END_SRC
+** Org-analyzer
+#+BEGIN_SRC emacs-lisp
+(use-package org-analyzer)
+#+END_SRC
+
+** Capture templates
+#+BEGIN_SRC emacs-lisp
+  (setq org-capture-templates (append
+     (quote
+      (("b" "Bloggging" entry
+        (file (concat dropbox-home "/Org/blog.org"))
+        "")
+       ("t" "Generic TODO" entry
+        (file (concat dropbox-home "Org/todo.org"))
+        "* TODO"))) (if (boundp 'project-specific-templates) project-specific-templates)))
+#+END_SRC
+** Reload images when running babel
+#+BEGIN_SRC emacs-lisp
+(defun shk-fix-inline-images ()
+  (when org-inline-image-overlays
+    (org-redisplay-inline-images)))
+
+(with-eval-after-load 'org
+  (add-hook 'org-babel-after-execute-hook 'shk-fix-inline-images))
+#+END_SRC
+* Window management
+** Shackle
+#+BEGIN_SRC emacs-lisp
+(use-package shackle
+  :init
+  (require 'shackle)
+  (setq helm-display-function 'pop-to-buffer) ; make helm play nice
+  (setq helm-swoop-split-window-function 'display-buffer)
+  (add-to-list 'shackle-rules
+               '("\\`\\*helm.*?\\*\\'" :regexp t :align t :size 0.9))
+  (add-to-list 'shackle-rules
+               '("\\`\\*Helm.*?\\*\\'" :regexp t :align right :size 0.4))
+  :config
+  (shackle-mode t))
+#+END_SRC
+* File editing modes
+#+BEGIN_SRC emacs-lisp
+
+(use-package cl)
+(use-package pcre2el)
+
+(use-package xml+)
+(use-package restclient)
+(use-package powershell)
+(use-package plantuml-mode
+  :init
+  (setq plantuml-jar-path (concat dropbox-home "/home/elisp/java-libs/plantuml.jar"))
+  (setq plantuml-default-exec-mode 'jar))
+(use-package json-mode)
+(use-package dockerfile-mode)
+(use-package graphql)
+(use-package graphql-mode)
+(use-package live-py-mode
+  :config
+  (setq live-py-version "python3"))
+(use-package highlight-indent-guides
+  :config
+  (setq highlight-indent-guides-method 'character)
+  (add-hook 'prog-mode-hook 'highlight-indent-guides-mode))
+#+END_SRC
+** Markdown
+#+BEGIN_SRC emacs-lisp
+(add-hook 'markdown-mode-hook 'flyspell-mode)
+#+END_SRC
+** Type/Javascript
+#+BEGIN_SRC emacs-lisp
+  (use-package js2-mode
+    :mode "\\.js\\'"
+    :init
+    (add-hook 'js2-mode-hook #'js2-imenu-extras-mode)
+    (add-hook 'js2-mode-hook #'flymake-eslint-enable)
+    (setq js2-strict-missing-semi-warning nil) 
+    (setf js2-mode-indent-inhibit-undo t)
+    (setq-default indent-tabs-mode nil)
+
+    :config
+    (setq lsp-eslint-server-command 
+          '("node" 
+            "/home/lahtela/Software/eslint/extension/server/out/eslintServer.js"
+            "--stdio"))
+    (with-eval-after-load "lsp-javascript-typescript"
+      (add-hook 'js2-mode-hook #'lsp))
+    (setq js2-basic-offset 2))
+  (defun setup-tide-mode ()
+    (interactive)
+    (tide-setup)
+    (flycheck-mode +1)
+    (setq flycheck-check-syntax-automatically '(save mode-enabled))
+    (eldoc-mode +1)
+    (tide-hl-identifier-mode +1)
+    ;; company is an optional dependency. You have to
+    ;; install it separately via package-install
+    ;; `M-x package-install [ret] company`
+    (company-mode +1))
+
+  (use-package web-mode
+    :ensure t
+    :mode (("\\.html?\\'" . web-mode)
+           ("\\.tsx\\'" . web-mode)
+           ("\\.jsx\\'" . web-mode))
+    :config
+    (setq web-mode-markup-indent-offset 2
+          web-mode-css-indent-offset 2
+          web-mode-code-indent-offset 2
+          web-mode-block-padding 2
+          web-mode-comment-style 2
+
+          web-mode-enable-css-colorization t
+          web-mode-enable-auto-pairing t
+          web-mode-enable-comment-keywords t
+          web-mode-enable-current-element-highlight t
+          web-mode-enable-auto-indentation nil
+          )
+    )
+
+
+  (use-package typescript-mode
+    :ensure t
+    :config
+    (setq typescript-indent-level 2)
+    (add-hook 'typescript-mode #'subword-mode))
+
+  (use-package tide
+    :init
+    :ensure t
+    :after (typescript-mode company flycheck)
+    :hook ((typescript-mode . tide-setup)
+           (typescript-mode . tide-hl-identifier-mode)))
+
+  (use-package css-mode
+    :config
+    (setq css-indent-offset 2))
+#+END_SRC
+** Flycheck
+#+BEGIN_SRC emacs-lisp
+(use-package flycheck
+  :ensure t
+  :config
+  (add-hook 'typescript-mode-hook 'flycheck-mode)
+  (add-hook 'json-mode-hook 'flycheck-mode)
+  (add-hook 'yaml-mode-hook flycheck-mode))
+#+END_SRC
+** Python
+#+BEGIN_SRC emacs-lisp
+(use-package elpy
+  :init (elpy-enable)
+  (setq elpy-rpc-python-command "python3"))
+#+END_SRC
+** LSP (disabled) 
+#+BEGIN_SRC emacs-lisp :tangle no
+(use-package lsp
+  :ensure lsp-mode
+  :config
+  (require 'lsp-clients)
+  (add-hook 'lsp-after-open-hook 'lsp-enable-imenu)
+  :init
+  (setf lsp-eldoc-render-all nil)
+  (setq lsp-inhibit-message t)
+  (setq lsp-message-project-root-warning t))
+(use-package lsp-mode)
+(use-package lsp-ui :commands lsp-ui-mode)
+(use-package helm-lsp :commands helm-lsp-workspace-symbol)
+(use-package lsp-treemacs :commands lsp-treemacs-errors-list)
+(use-package ccls
+  :hook ((c-mode c++-mode objc-mode cuda-mode) .
+         (lambda () (require 'ccls) (lsp))))
+
+ (use-package company-lsp
+   :config
+   (push 'company-lsp company-backends)
+   (add-hook 'js2-mode-hook #'lsp))
+
+
+#+END_SRC
+* Magit
+#+BEGIN_SRC emacs-lisp
+;;(use-package github-review)
+(use-package magit)
+(use-package forge)
+#+END_SRC
+* Blogging
+#+BEGIN_SRC emacs-lisp
+(use-package easy-jekyll
+  :config
+  (setq easy-jekyll-basedir (concat dropbox-home "git/blog/"))
+  (setq easy-jekyll-url "https://lahtela.me")
+  (setq markdown-command "pandoc -f markdown -t html -s --mathjax --highlight-style=pygments"))
+#+END_SRC
+* Dashboard
+#+BEGIN_SRC emacs-lisp
+(setq bookmark-save-flag 1)
+(require 'bookmark)
+(bookmark-bmenu-list)
+(use-package dashboard
+  :config
+  (dashboard-setup-startup-hook))
+
+#+END_SRC
+* Windows OS
+#+BEGIN_SRC emacs-lisp
+  ;; Load the ssh agent into environment variables if we have the pid file
+  (defun load-agent-socket-env()
+    (interactive)
+    (defvar pid_file (concat (getenv "TEMP") "\\" "ssh_agent.pid"))
+    (if (file-exists-p pid_file)
+        (progn 
+        (setenv "SSH_AUTH_SOCK" (save-excursion
+                                  (with-temp-buffer
+                                    (insert-file-contents pid_file)
+                                    (goto-char 1)
+                                    (re-search-forward "SSH_AUTH_SOCK=\\(.*?\\);")
+                                    (match-string 1)
+                                    )))
+      (setenv "SSH_AGENT_PID" (save-excursion
+                                (with-temp-buffer
+                                  (insert-file-contents pid_file)
+                                  (goto-char 1)
+                                  (re-search-forward "SSH_AGENT_PID=\\(.*?\\);")
+                                  (match-string 1)
+                                  ))))))
+
+
+
+
+
+  (if (string-equal system-type "windows-nt")
+      (progn
+        (use-package ssh-agency)
+        (setq find-program (concat git-home "/usr/bin/find.exe"))
+        (setq grep-program (concat git-home "/bin/grep.exe"))
+        (setq ispell-program-name "C:/Tatu/Apps/hunspell/bin/hunspell.exe")
+        (setq helm-ag-base-command "c:/tatu/bin/ag --vimgrep")
+  ))
+
+#+END_SRC
+* Global Bindings
+#+BEGIN_SRC emacs-lisp
+(global-set-key [f1]  'goto-line)
+(global-set-key [f2]  'helm-projects-find-files)
+(global-set-key [f3]  'helm-recentf)
+(global-set-key [f4]  'helm-ag)
+
+(global-set-key [f5]  'compile)
+(global-set-key [f6]  'next-error)
+(global-set-key [f8]  'magit-status)
+
+(global-set-key [f9]  'org-agenda-list)
+(global-set-key [f10]  'helm-org-rifle)
+(global-set-key [f11]  (lambda () (interactive) (switch-to-buffer "*dashboard*")))
+(global-set-key [f12]  'org-capture)
+
+(global-set-key (kbd "M-k") 'kill-line-without-copy)
+(global-set-key (kbd "M-<up>") 'other-window)
+(global-set-key (kbd "C-§") 'whitespace-mode)
+
+(defun cycle-backwards ()
+  (interactive)
+  (other-window -1))
+
+(global-set-key (kbd "M-<down>") 'cycle-backwards)
+(global-set-key (kbd "M-<backspace>") 'backward-kill-word-without-copy)
+(global-set-key (kbd "M-z") 'zap-up-to-char)
+(global-set-key (kbd "<M-S-up>") 'scroll-down-line)
+(global-set-key (kbd "<M-S-down>") 'scroll-up-line)
+
+(global-set-key (kbd "M-C-(") (lambda () (interactive) (scroll-down 10)))
+(global-set-key (kbd "M-C-)") (lambda () (interactive) (scroll-up 10)))
+(global-set-key (kbd "C-c o") 'helm-find-files)
+(global-set-key (kbd "C-z") 'undo)
+#+END_SRC
