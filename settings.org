@@ -471,6 +471,11 @@ If not, show simply the clocked time like 01:50. All Tasks"
 (with-eval-after-load 'org
   (add-hook 'org-babel-after-execute-hook 'shk-fix-inline-images))
 #+END_SRC
+** Bullets
+#+BEGIN_SRC emacs-lisp
+  (use-package org-bullets
+    :config (add-hook 'org-mode-hook (lambda () (org-bullets-mode 1))))
+#+END_SRC
 * Window management
 ** Shackle
 #+BEGIN_SRC emacs-lisp
