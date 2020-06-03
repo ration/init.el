@@ -100,7 +100,7 @@
   ;; is displayed on top (happens near the bottom of windows)
   (setq company-tooltip-flip-when-above t)
   (global-company-mode))
- 
+
 (use-package company-quickhelp
   :ensure t
   :init
@@ -254,7 +254,8 @@
            ("C-x b" . helm-buffers-list)
            ("C-c f" . helm-recentf)
            ("M-y" . helm-show-kill-ring)
-           :map helm-map 
+
+           :map helm-map
            ([tab] . helm-execute-if-single-persistent-action)
            ("C-i" . helm-select-action)))
   (use-package helm-ag
@@ -346,17 +347,13 @@
 * Org Mode
 #+BEGIN_SRC emacs-lisp
   (require 'find-lisp)
-  (use-package org-mru-clock)
-  (setq calendar-week-start-day 1)
-  (use-package org-super-agenda)
-  (use-package org-clock-today)
 
+  (setq calendar-week-start-day 1)
   (use-package org-journal
     :init
-    (setq org-journal-enable-encryption t)
     (setq org-journal-dir (concat dropbox-home "Org/Journal"))
     (setq org-journal-file-type "weekly")
-    (setq org-journal-file-format "%Y-%m-%d.org.gpg")
+    (setq org-journal-file-format "%Y-%m-%d.org")
     (setq org-journal-date-format "%y-%m-%d, %A"))
 
   (use-package ox-gfm)
@@ -372,6 +369,7 @@
   (add-hook 'org-mode-hook 'flyspell-mode)
   (add-hook 'org-mode-hook
             (lambda () (add-hook 'before-save-hook 'cleanup-buffer nil 'local)))
+  (use-package org-super-agenda)
 #+END_SRC
 ** Plantuml
 #+BEGIN_SRC emacs-lisp
@@ -386,62 +384,64 @@
 #+END_SRC
 
 ** Org clock stuff
-#+BEGIN_SRC emacs-lisp
-(defun x-org-clock-sum-today ()
-  "Visit each file in `org-agenda-files' and return the total time of today's
-clocked tasks in minutes."
-  (let ((files (org-agenda-files))
-        (total 0))
-    (org-agenda-prepare-buffers files)
-    (dolist (file files)
-      (with-current-buffer (find-buffer-visiting file)
-        (setq total (+ total (org-clock-sum-today)))))
-    total))
-(defun x-org-clock-get-clock-string-today ()
-  "Form a clock-string, that will be shown in the mode line.
-If an effort estimate was defined for the current item, use
-01:30/01:50 format (clocked/estimated).
-If not, show simply the clocked time like 01:50. All Tasks"
-  (let ((clocked-time (x-org-clock-sum-today)))
-    (if org-clock-effort
-	(let* ((effort-in-minutes (org-duration-to-minutes org-clock-effort))
-	       (work-done-str
-		(propertize (org-duration-from-minutes clocked-time)
-			    'face
-			    (if (and org-clock-task-overrun
-				     (not org-clock-task-overrun-text))
-				'org-mode-line-clock-overrun
-			      'org-mode-line-clock)))
-	       (effort-str (org-duration-from-minutes effort-in-minutes)))
-	  (format (propertize " [%s/%s] (%s)" 'face 'org-mode-line-clock)
-		  work-done-str effort-str org-clock-heading))
-      (format (propertize " [%s] (%s)" 'face 'org-mode-line-clock)
-	      (org-duration-from-minutes clocked-time)
-	      org-clock-heading))))
-(defun current-clock-time-to-file ()
-   (interactive)
-   (with-temp-file "~/.emacs.d/.task"
-     (if (org-clocking-p)
-       (insert (x-org-clock-get-clock-string-today))
-       (insert ""))))
-(run-with-timer 1 60 'current-clock-time-to-file)
-(add-hook 'org-clock-in-hook 'current-clock-time-to-file)
-(add-hook 'org-clock-out-hook 'current-clock-time-to-file)
+#+BEGIN_SRC emacs-lisp :tangle no
+    (use-package org-clock-today)
+    (use-package org-mru-clock)
+  (defun x-org-clock-sum-today ()
+    "Visit each file in `org-agenda-files' and return the total time of today's
+  clocked tasks in minutes."
+    (let ((files (org-agenda-files))
+          (total 0))
+      (org-agenda-prepare-buffers files)
+      (dolist (file files)
+        (with-current-buffer (find-buffer-visiting file)
+          (setq total (+ total (org-clock-sum-today)))))
+      total))
+  (defun x-org-clock-get-clock-string-today ()
+    "Form a clock-string, that will be shown in the mode line.
+  If an effort estimate was defined for the current item, use
+  01:30/01:50 format (clocked/estimated).
+  If not, show simply the clocked time like 01:50. All Tasks"
+    (let ((clocked-time (x-org-clock-sum-today)))
+      (if org-clock-effort
+          (let* ((effort-in-minutes (org-duration-to-minutes org-clock-effort))
+                 (work-done-str
+                  (propertize (org-duration-from-minutes clocked-time)
+                              'face
+                              (if (and org-clock-task-overrun
+                                       (not org-clock-task-overrun-text))
+                                  'org-mode-line-clock-overrun
+                                'org-mode-line-clock)))
+                 (effort-str (org-duration-from-minutes effort-in-minutes)))
+            (format (propertize " [%s/%s] (%s)" 'face 'org-mode-line-clock)
+                    work-done-str effort-str org-clock-heading))
+        (format (propertize " [%s] (%s)" 'face 'org-mode-line-clock)
+                (org-duration-from-minutes clocked-time)
+                org-clock-heading))))
+  (defun current-clock-time-to-file ()
+     (interactive)
+     (with-temp-file "~/.emacs.d/.task"
+       (if (org-clocking-p)
+         (insert (x-org-clock-get-clock-string-today))
+         (insert ""))))
+  (run-with-timer 1 60 'current-clock-time-to-file)
+  (add-hook 'org-clock-in-hook 'current-clock-time-to-file)
+  (add-hook 'org-clock-out-hook 'current-clock-time-to-file)
 
 
 #+END_SRC
 ** org-clubhouse
 #+BEGIN_SRC emacs-lisp
-(use-package org-clubhouse
-  :quelpa (org-clubhouse :fetcher github
-          :repo "glittershark/org-clubhouse")
-  :init (setq org-clubhouse-state-alist
-      '(("TODO"   . "Backlog")
-        ("ACTIVE" . "In Development")
-        ("PENDING" . "Pending")
-        ("REVIEW"   . "Ready for Review")
-        ("DEPLOY"   . "Ready for Deploy")
-        ("DONE"   . "Completed"))))
+  (use-package org-clubhouse
+    :quelpa (org-clubhouse :fetcher github
+            :repo "glittershark/org-clubhouse")
+    :init (setq org-clubhouse-state-alist
+        '(("TODO"   . "Backlog")
+          ("ACTIVE" . "In Development")
+          ("PENDING" . "Pending")
+          ("REVIEW"   . "Ready for Review")
+          ("DONE"   . "Completed")))
+          (setq org-clubhouse-workflow-name "Development"))
 #+END_SRC
 ** Emphasis
 #+BEGIN_SRC emacs-lisp
@@ -454,7 +454,7 @@ If not, show simply the clocked time like 01:50. All Tasks"
 			  ("=" org-code "<code>" "</code>" verbatim)
 			  ("*" org-verbatim "<code>" "</code>" verbatim)
 			  ("+" (:strike-through t) "<del>" "</del>")))
-(setq org-hide-emphasis-markers -1)
+(setq org-hide-emphasis-markers nil)
 #+END_SRC
 ** Org-analyzer
 #+BEGIN_SRC emacs-lisp
@@ -464,13 +464,18 @@ If not, show simply the clocked time like 01:50. All Tasks"
 ** Capture templates
 #+BEGIN_SRC emacs-lisp
   (setq org-capture-templates (append
-     (quote
-      (("b" "Bloggging" entry
-        (file (concat dropbox-home "/Org/blog.org"))
-        "")
-       ("t" "Generic TODO" entry
-        (file (concat dropbox-home "Org/todo.org"))
-        "* TODO"))) (if (boundp 'project-specific-templates) project-specific-templates)))
+                               (quote
+                                (("b" "Bloggging" entry
+                                  (file (concat dropbox-home "/Org/blog.org"))
+                                  "")
+                                 ("r" "Roam" plain (function org-roam--capture-get-point)
+                                  "%?"
+                                  :file-name "%<%Y%m%d%H%M%S>-${slug}"
+                                  :head "#+TITLE: ${title}\n"
+                                  :unnarrowed t)
+                                 ("t" "Generic TODO" entry
+                                  (file (concat dropbox-home "Org/todo.org"))
+                                  "* TODO"))) (if (boundp 'project-specific-templates) project-specific-templates)))
 #+END_SRC
 ** Reload images when running babel
 #+BEGIN_SRC emacs-lisp
@@ -486,6 +491,23 @@ If not, show simply the clocked time like 01:50. All Tasks"
   (use-package org-bullets
     :config (add-hook 'org-mode-hook (lambda () (org-bullets-mode 1))))
 #+END_SRC
+** Org-Roam
+#+BEGIN_SRC emacs-lisp
+
+      (use-package org-roam
+      :hook (after-init . org-roam-mode)
+  ;;    :custom (org-roam-directory (if (boundp 'project-roam-directory) project-roam-directory org-agenda-directory))
+      :custom (org-roam-directory  org-agenda-directory)
+              (org-roam-db-location (concat org-agenda-directory "roam.db"))
+            :bind (:map org-roam-mode-map
+                    (("C-c n l" . org-roam)
+                     ("C-c n f" . org-roam-find-file)
+                     ("C-c n g" . org-roam-show-graph))
+                    :map org-mode-map
+                    (("C-c n i" . org-roam-insert))))
+      (use-package org-roam-server
+        :custom org-roam-server-port 9090)
+#+END_SRC
 * Window management
 ** Shackle
 #+BEGIN_SRC emacs-lisp
@@ -498,33 +520,37 @@ If not, show simply the clocked time like 01:50. All Tasks"
                '("\\`\\*helm.*?\\*\\'" :regexp t :align t :size 0.9))
   (add-to-list 'shackle-rules
                '("\\`\\*Helm.*?\\*\\'" :regexp t :align right :size 0.4))
+  (add-to-list 'shackle-rules
+               '("\\`\\*PLANTUML.*?\\*\\'" :popup t :regexp t :align below :size 0.4))
   :config
   (shackle-mode t))
 #+END_SRC
 * File editing modes
 #+BEGIN_SRC emacs-lisp
 
-(use-package cl)
-(use-package pcre2el)
+  (use-package cl)
+  (use-package pcre2el)
 
-(use-package xml+)
-(use-package restclient)
-(use-package powershell)
-(use-package plantuml-mode
-  :init
-  (setq plantuml-jar-path (concat dropbox-home "/home/elisp/java-libs/plantuml.jar"))
-  (setq plantuml-default-exec-mode 'jar))
-(use-package json-mode)
-(use-package dockerfile-mode)
-(use-package graphql)
-(use-package graphql-mode)
-(use-package live-py-mode
-  :config
-  (setq live-py-version "python3"))
-(use-package highlight-indent-guides
-  :config
-  (setq highlight-indent-guides-method 'character)
-  (add-hook 'prog-mode-hook 'highlight-indent-guides-mode))
+  (use-package xml+)
+  (use-package restclient)
+  (use-package powershell)
+  (use-package plantuml-mode
+    :init
+    (setq plantuml-jar-path (concat dropbox-home "/home/elisp/java-libs/plantuml.jar"))
+    (setq plantuml-default-exec-mode 'jar))
+  (use-package json-mode)
+  (use-package dockerfile-mode)
+  (use-package graphql)
+  (use-package graphql-mode)
+  (use-package yaml-mode)
+
+  (use-package live-py-mode
+    :config
+    (setq live-py-version "python3"))
+  (use-package highlight-indent-guides
+    :config
+    (setq highlight-indent-guides-method 'character)
+    (add-hook 'prog-mode-hook 'highlight-indent-guides-mode))
 #+END_SRC
 ** Markdown
 #+BEGIN_SRC emacs-lisp
@@ -535,15 +561,15 @@ If not, show simply the clocked time like 01:50. All Tasks"
   (use-package js2-mode
     :mode "\\.js\\'"
     :init
-    (add-hook 'js2-mode-hook #'js2-imenu-extras-mode)
+   (add-hook 'js2-mode-hook #'js2-imenu-extras-mode)
     (add-hook 'js2-mode-hook #'flymake-eslint-enable)
-    (setq js2-strict-missing-semi-warning nil) 
+    (setq js2-strict-missing-semi-warning nil)
     (setf js2-mode-indent-inhibit-undo t)
     (setq-default indent-tabs-mode nil)
 
     :config
-    (setq lsp-eslint-server-command 
-          '("node" 
+    (setq lsp-eslint-server-command
+          '("node"
             "/home/lahtela/Software/eslint/extension/server/out/eslintServer.js"
             "--stdio"))
     (with-eval-after-load "lsp-javascript-typescript"
@@ -614,7 +640,7 @@ If not, show simply the clocked time like 01:50. All Tasks"
   :init (elpy-enable)
   (setq elpy-rpc-python-command "python3"))
 #+END_SRC
-** LSP (disabled) 
+** LSP (disabled)
 #+BEGIN_SRC emacs-lisp :tangle no
 (use-package lsp
   :ensure lsp-mode
@@ -641,7 +667,7 @@ If not, show simply the clocked time like 01:50. All Tasks"
 
 #+END_SRC
 * Magit
-#+BEGIN_SRC emacs-lisp 
+#+BEGIN_SRC emacs-lisp
 (use-package magit)
 (use-package forge)
 #+END_SRC
@@ -670,7 +696,7 @@ If not, show simply the clocked time like 01:50. All Tasks"
     (interactive)
     (defvar pid_file (concat (getenv "TEMP") "\\" "ssh_agent.pid"))
     (if (file-exists-p pid_file)
-        (progn 
+        (progn
         (setenv "SSH_AUTH_SOCK" (save-excursion
                                   (with-temp-buffer
                                     (insert-file-contents pid_file)
@@ -734,4 +760,7 @@ If not, show simply the clocked time like 01:50. All Tasks"
 (global-set-key (kbd "M-C-)") (lambda () (interactive) (scroll-up 10)))
 (global-set-key (kbd "C-c o") 'helm-find-files)
 (global-set-key (kbd "C-z") 'undo)
+(global-set-key (kbd "C-ö") (lambda () (interactive) (point-to-register ?m)))
+(global-set-key (kbd "C-ä") (lambda () (interactive) (jump-to-register ?m)))
+
 #+END_SRC
