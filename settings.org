@@ -50,15 +50,30 @@
 #+END_SRC
 
 ** Distinguish read only buffers visually
+
+To make things work properly you need to have run color-theme-initialize
+
 #+begin_src emacs-lisp
+
+;;(defadvice load-theme (before theme-dont-propagate activate)
+;; (mapcar #'disable-theme custom-enabled-themes))
+(defun my-color-readonly ()
+  "Colorize buffer so it's evident that it's in read only")
+;  (if buffer-read-only
+;      (color-theme-buffer-local 'color-theme-robin-hood (current-buffer))
+;    (color-theme-buffer-local 'color-theme-matrix (current-buffer))))
+
+(face-attribute 'default :background)
+
+;(use-package color-theme-buffer-local
+;:init (add-hook 'read-only-mode-hook 'my-color-readonly))
+
 ;;(face-attribute 'whitespace-trailing :background)
-;;(color-theme-buffer-local 'color-theme-robin-hood (current-buffer))
-;;defun my-read-only-color ()
-;;  (when buffer-read-only
-;;    ()))
+;;(color-theme-buffer-local 'color-theme-matrix (current-buffer))
 
 ;;(add-hook 'find-file-hook 'my-read-only-color)
 #+end_src
+
 * File formatting stuff
 #+BEGIN_SRC emacs-lisp
 (setq-default show-trailing-whitespace t)
@@ -266,7 +281,9 @@ Also make right or left arrow keys abort the completion.
 Some usage through chords (see chords)
 #+begin_src emacs-lisp
 (use-package multiple-cursors
-:bind ("C-<" . mc/mark-next-like-this))
+  :bind ("C-<" . mc/mark-next-like-this)
+        ("C--" . mc/edit-lines))
+
 #+end_src
 ** rename-file-and-buffer
 #+begin_src emacs-lisp
@@ -288,7 +305,7 @@ Some usage through chords (see chords)
 ** goto-last-change
 #+begin_src emacs-lisp
 (use-package goto-last-change
-:bind ("§" . goto-last-change))
+:bind ("C-§" . goto-last-change))
 #+end_src
 * Helm
 #+BEGIN_SRC emacs-lisp
@@ -576,8 +593,8 @@ If org-cal keys has been set install org-gcal and add a sync for it in agenda
     (use-package org-gcal
       :config (define-key org-agenda-mode-map (kbd "ö") 'org-gcal-fetch)))
 #+end_src
-** Org-Roam
-#+BEGIN_SRC emacs-lisp
+** Org-Roam (disabled)
+#+BEGIN_SRC emacs-lisp :tangle no
 (use-package org-roam
 :hook (after-init . org-roam-mode)
 :custom (org-roam-directory  org-agenda-directory)
@@ -591,7 +608,19 @@ If org-cal keys has been set install org-gcal and add a sync for it in agenda
 (use-package org-roam-server
   :custom org-roam-server-port 9090)
 #+END_SRC
+** todoist
+#+begin_src emacs-lisp
+(if (boundp 'todoist-token)
+    (use-package todoist
+      :init (setq todoist-backing-buffer (concat org-agenda-directory "todoist.org"))))
+#+end_src
+
 * Window management
+** Ace-windows
+#+begin_src emacs-lisp
+(use-package ace-window
+:bind (("§" . ace-window)))
+#+end_src
 ** Shackle
 #+BEGIN_SRC emacs-lisp
 (use-package shackle
@@ -604,14 +633,20 @@ If org-cal keys has been set install org-gcal and add a sync for it in agenda
   (add-to-list 'shackle-rules
                '("\\`\\*Helm.*?\\*\\'" :regexp t :align right :size 0.4))
   (add-to-list 'shackle-rules
+               '("\\`\\*vterm.*?\\*\\'" :regexp t :align right :size 0.4))
+
+  (add-to-list 'shackle-rules
                '("\\`\\*PLANTUML.*?\\*\\'" :popup t :regexp t :align below :size 0.4))
+
   :config
   (shackle-mode t))
 #+END_SRC
 * File editing modes
 #+BEGIN_SRC emacs-lisp
 
-  (use-package cl)
+(if (version<= emacs-version "26")
+    (use-package cl))
+
   (use-package pcre2el)
 
   (use-package xml+)
@@ -707,6 +742,9 @@ If org-cal keys has been set install org-gcal and add a sync for it in agenda
   (use-package css-mode
     :config
     (setq css-indent-offset 2))
+
+(use-package jest
+:init (setq jest-executable "~/Software/nodejs/bin/npm test --"))
 #+END_SRC
 ** Flycheck
 #+BEGIN_SRC emacs-lisp
@@ -723,6 +761,14 @@ If org-cal keys has been set install org-gcal and add a sync for it in agenda
   :init (elpy-enable)
   (setq elpy-rpc-python-command "python3"))
 #+END_SRC
+** logview
+#+begin_src emacs-lisp
+(use-package logview
+    :mode (("\\.log?\\'" . logview-mode))
+:hook ((logview-mode . read-only-mode)
+       (logview-mode . auto-revert-mode)
+       (logview-mode . (lambda () (setq show-trailing-whitespace nil)))))
+#+end_src
 ** LSP (disabled)
 #+BEGIN_SRC emacs-lisp
 (use-package lsp
@@ -751,11 +797,29 @@ If org-cal keys has been set install org-gcal and add a sync for it in agenda
 
 
 #+END_SRC
-* Magit
+* Compilation modifications
+Change compilation directory
+#+begin_src emacs-lisp
+(defun compile-in-dir (dir command)
+  (interactive "DCompile in directory: \nsCommand: ")
+  (let ((default-directory dir))
+    (compile command)))
+#+end_src
+* (Ma) Git
 #+BEGIN_SRC emacs-lisp
 (use-package magit)
 (use-package forge)
 #+END_SRC
+** ediff
+#+begin_src emacs-lisp
+(setq ediff-window-setup-function 'ediff-setup-windows-plain)
+(custom-set-variables
+ '(ediff-window-setup-function 'ediff-setup-windows-plain)
+ '(ediff-diff-options "-w")
+ '(ediff-split-window-function 'split-window-horizontally))
+(add-hook 'ediff-after-quit-hook-internal 'winner-undo)
+
+#+end_src
 * Blogging
 #+BEGIN_SRC emacs-lisp
 (use-package easy-jekyll
@@ -774,6 +838,12 @@ If org-cal keys has been set install org-gcal and add a sync for it in agenda
   (dashboard-setup-startup-hook))
 
 #+END_SRC
+* Terminal
+#+begin_src emacs-lisp
+(if module-file-suffix
+    (use-package vterm
+       :hook ((vterm-mode . (lambda () (setq show-trailing-whitespace nil))))))
+#+end_src
 * Windows OS
 #+BEGIN_SRC emacs-lisp
   ;; Load the ssh agent into environment variables if we have the pid file
@@ -854,9 +924,5 @@ If org-cal keys has been set install org-gcal and add a sync for it in agenda
 (use-package key-chord
   :config
   (key-chord-define-global ",," 'avy-goto-char-timer)
-  (key-chord-define-global ".." 'mc/edit-lines)
-  (key-chord-define-global "mm" 'mc/mark-all-like-this)
   (key-chord-mode 1))
-;;  (key-chord-define-global "SS" 'avy-goto-char-timer))
-;;  (key-chord-define-global "--" 'my-treemacs-back-and-forth)
 #+end_src
