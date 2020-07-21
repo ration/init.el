@@ -33,6 +33,7 @@
       (set-background-color "DarkSlateGray")
       (set-foreground-color  "Wheat")
       ))
+
 #+END_SRC
 ** Theme
 #+BEGIN_SRC emacs-lisp
@@ -43,7 +44,7 @@
 #+END_SRC
 
 ** Use global-display-numbers, display path in title
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC emacs-lisp :tangle no
 (if (version<= "26" emacs-version)
     (global-display-line-numbers-mode))
 (setq-default frame-title-format '("%f [%m] - emacs]"))
@@ -198,6 +199,29 @@ Also make right or left arrow keys abort the completion.
   :config
     (add-hook 'prog-mode-hook 'smartparens-mode))
 #+END_SRC
+** Helpful
+#+begin_src emacs-lisp
+(use-package helpful)
+(global-set-key (kbd "C-h f") #'helpful-callable)
+(global-set-key (kbd "C-h v") #'helpful-variable)
+(global-set-key (kbd "C-h k") #'helpful-key)
+;; Lookup the current symbol at point. C-c C-d is a common keybinding
+;; for this in lisp modes.
+(global-set-key (kbd "C-c C-d") #'helpful-at-point)
+
+;; Look up *F*unctions (excludes macros).
+;;
+;; By default, C-h F is bound to `Info-goto-emacs-command-node'. Helpful
+;; already links to the manual, if a function is referenced there.
+(global-set-key (kbd "C-h F") #'helpful-function)
+
+;; Look up *C*ommands.
+;;
+;; By default, C-h C is bound to describe `describe-coding-system'. I
+;; don't find this very useful, but it's frequently useful to only
+;; look at interactive functions.
+(global-set-key (kbd "C-h C") #'helpful-command)
+#+end_src
 ** Which key
 #+BEGIN_SRC emacs-lisp
 (use-package which-key
@@ -307,7 +331,7 @@ Some usage through chords (see chords)
 (use-package goto-last-change
 :bind ("C-§" . goto-last-change))
 #+end_src
-* Helm
+* Helm, Swoop and related
 #+BEGIN_SRC emacs-lisp
 (defun helm-execute-if-single-persistent-action (&optional attr split-onewindow)
   "Execute persistent action if the candidate list is less than 2 OR if theres no input and only one non trivial thing to select from"
@@ -361,7 +385,7 @@ Some usage through chords (see chords)
              ("C-s" . kill-whole-line)))
 (use-package helm-org-rifle)
 (helm-mode 1)
-
+(global-set-key (kbd "M-s M-s") 'isearch-forward)
 
 #+END_SRC
 * Organizing and finding files and buffers
@@ -435,6 +459,13 @@ Some usage through chords (see chords)
 
 #+END_SRC
 * Org Mode
+
+Unbind colliding mappings
+#+begin_src emacs-lisp
+(define-key org-mode-map (kbd "M-<down>") nil)
+(define-key org-mode-map (kbd "M-<up>") nil)
+#+end_src
+Journal, Rifle, gfm
 #+BEGIN_SRC emacs-lisp
 (require 'find-lisp)
 (setq calendar-week-start-day 1)
@@ -454,6 +485,8 @@ Some usage through chords (see chords)
 
 (add-hook 'auto-save-hook 'org-save-all-org-buffers)
 (add-hook 'org-mode-hook 'flyspell-mode)
+
+
 (add-hook 'org-agenda-mode-hook (lambda () (setq show-trailing-whitespace nil)))
 (add-hook 'org-mode-hook
           (lambda () (add-hook 'before-save-hook 'cleanup-buffer nil 'local)))
@@ -642,6 +675,7 @@ If org-cal keys has been set install org-gcal and add a sync for it in agenda
   (shackle-mode t))
 #+END_SRC
 * File editing modes
+*
 #+BEGIN_SRC emacs-lisp
 
 (if (version<= emacs-version "26")
@@ -656,7 +690,7 @@ If org-cal keys has been set install org-gcal and add a sync for it in agenda
     :init
     (setq plantuml-jar-path (concat dropbox-home "/home/elisp/java-libs/plantuml.jar"))
     (setq plantuml-default-exec-mode 'jar))
-  (use-package json-mode)
+
   (use-package dockerfile-mode)
   (use-package graphql)
   (use-package graphql-mode)
@@ -670,6 +704,19 @@ If org-cal keys has been set install org-gcal and add a sync for it in agenda
     (setq highlight-indent-guides-method 'character)
     (add-hook 'prog-mode-hook 'highlight-indent-guides-mode))
 #+END_SRC
+** json
+#+begin_src emacs-lisp
+(defun my-json-pretty-print-from-string-to-kill-ring (start end)
+  "Copy contents of a embedded json object and copy the content pretty printed into kill ring"
+  (interactive "r")
+  (if (use-region-p)
+      (let ((regionp (buffer-substring start end)))
+        (with-temp-buffer
+          (insert (json-read-from-string regionp))
+          (json-pretty-print-buffer)
+          (clipboard-kill-region (point-min) (point-max))))))
+(use-package json-mode)
+#+end_src
 ** Markdown
 #+BEGIN_SRC emacs-lisp
 (add-hook 'markdown-mode-hook 'flyspell-mode)

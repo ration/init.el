@@ -17,7 +17,7 @@
 ;; Dont prompt about vc symlinks, just goto
 (setq vc-follow-symlinks nil)
 
-(if (version< emacs-version "27.0")
+(if (version<= "27" emacs-version)
     (load-file (expand-file-name "early-init.el" user-emacs-directory))
 )
 
