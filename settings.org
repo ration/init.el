@@ -47,6 +47,7 @@
 #+BEGIN_SRC emacs-lisp :tangle no
 (if (version<= "26" emacs-version)
     (global-display-line-numbers-mode))
+
 (setq-default frame-title-format '("%f [%m] - emacs]"))
 #+END_SRC
 
@@ -64,7 +65,7 @@ To make things work properly you need to have run color-theme-initialize
 ;      (color-theme-buffer-local 'color-theme-robin-hood (current-buffer))
 ;    (color-theme-buffer-local 'color-theme-matrix (current-buffer))))
 
-(face-attribute 'default :background)
+;;(face-attribute 'default :background)
 
 ;(use-package color-theme-buffer-local
 ;:init (add-hook 'read-only-mode-hook 'my-color-readonly))
@@ -464,6 +465,9 @@ Unbind colliding mappings
 #+begin_src emacs-lisp
 (define-key org-mode-map (kbd "M-<down>") nil)
 (define-key org-mode-map (kbd "M-<up>") nil)
+(define-key org-mode-map (kbd "M-<left>") nil)
+(define-key org-mode-map (kbd "M-<right>") nil)
+
 #+end_src
 Journal, Rifle, gfm
 #+BEGIN_SRC emacs-lisp
@@ -647,8 +651,41 @@ If org-cal keys has been set install org-gcal and add a sync for it in agenda
     (use-package todoist
       :init (setq todoist-backing-buffer (concat org-agenda-directory "todoist.org"))))
 #+end_src
-
+* Hydra
+#+begin_src emacs-lisp
+(use-package hydra)
+#+end_src
 * Window management
+Some window management and switching window is in global bindings. Maybe move here?
+** Switch-window
+Only need the resizing functions now
+#+begin_src emacs-lisp
+(use-package switch-window
+  :bind ("C-s-<left>" . switch-window-mvborder-left)
+  ("C-s-<right>" . switch-window-mvborder-right)
+  ("C-s-<up>" . switch-window-mvborder-up)
+  ("C-s-<down>" . switch-window-mvborder-down))
+#+end_src
+** Flashing active window when window is changed
+#+begin_src emacs-lisp :tangle no
+(make-face 'flash-active-buffer-face)
+(set-face-attribute 'flash-active-buffer-face nil
+                    :background "#FFFFFF" :foreground nil)
+(defun highlight-selected-window ()
+  "Highlight selected window with a different background color."
+  (walk-windows (lambda (w)
+                  (unless (eq w (selected-window))
+                    (with-current-buffer (window-buffer w)
+                      (buffer-face-set 'default)))))
+  (buffer-face-set '(:background "#202020")))
+(defun flash-active-buffer ()
+  (interactive)
+  (run-at-time "100 millisec" nil
+               (lambda (remap-cookie)
+                 (face-remap-remove-relative remap-cookie))
+               (face-remap-add-relative 'default 'flash-active-buffer-face)))
+(add-hook 'buffer-list-update-hook 'flash-active-buffer)
+#+end_src
 ** Ace-windows
 #+begin_src emacs-lisp
 (use-package ace-window
@@ -666,7 +703,7 @@ If org-cal keys has been set install org-gcal and add a sync for it in agenda
   (add-to-list 'shackle-rules
                '("\\`\\*Helm.*?\\*\\'" :regexp t :align right :size 0.4))
   (add-to-list 'shackle-rules
-               '("\\`\\*vterm.*?\\*\\'" :regexp t :align right :size 0.4))
+               '("\\`\\*Helpful.*?\\*\\'" :regexp t :frame t))
 
   (add-to-list 'shackle-rules
                '("\\`\\*PLANTUML.*?\\*\\'" :popup t :regexp t :align below :size 0.4))
@@ -885,11 +922,21 @@ Change compilation directory
   (dashboard-setup-startup-hook))
 
 #+END_SRC
-* Terminal
+* Terminal (vterm)
+Synchronize default-directory
 #+begin_src emacs-lisp
+
+(defun vterm-update-pwd (path)
+  (setq default-directory path))
+
+;;(advice-remove 'find-file #'vterm-directory-sync) default-directory
 (if module-file-suffix
-    (use-package vterm
-       :hook ((vterm-mode . (lambda () (setq show-trailing-whitespace nil))))))
+      (use-package vterm
+        :config (setq vterm-eval-cmds '(("find-file" find-file)
+                             ("message" message)
+                             ("vterm-clear-scrollback" vterm-clear-scrollback)
+                             ("update-pwd" vterm-update-pwd)))
+        :hook ((vterm-mode . (lambda () (setq show-trailing-whitespace nil))))))
 #+end_src
 * Windows OS
 #+BEGIN_SRC emacs-lisp
@@ -945,14 +992,13 @@ Change compilation directory
 (global-set-key [f12]  'org-capture)
 
 (global-set-key (kbd "M-k") 'kill-line-without-copy)
-(global-set-key (kbd "M-<up>") 'other-window)
+
 (global-set-key (kbd "C-§") 'whitespace-mode)
+(global-set-key (kbd "M-<up>") 'windmove-up)
+(global-set-key (kbd "M-<down>") 'windmove-down)
+(global-set-key (kbd "M-<left>") 'windmove-left)
+(global-set-key (kbd "M-<right>") 'windmove-right)
 
-(defun cycle-backwards ()
-  (interactive)
-  (other-window -1))
-
-(global-set-key (kbd "M-<down>") 'cycle-backwards)
 (global-set-key (kbd "M-<backspace>") 'backward-kill-word-without-copy)
 (global-set-key (kbd "M-z") 'zap-up-to-char)
 (global-set-key (kbd "<M-S-up>") 'scroll-down-line)
