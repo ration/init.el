@@ -19,6 +19,18 @@
 #+BEGIN_SRC emacs-lisp
 (use-package try)
 #+END_SRC
+* Create backups in separate directory and disable lock files
+#+BEGIN_SRC emacs-lisp
+(setq create-lockfiles nil)
+
+(use-package no-littering
+:config (setq auto-save-file-name-transforms
+            `((".*" ,(no-littering-expand-var-file-name "auto-save/") t)))
+(require 'recentf)
+(add-to-list 'recentf-exclude no-littering-var-directory)
+(add-to-list 'recentf-exclude no-littering-etc-directory))
+#+END_SRC
+
 * UI Look and feel. Note some of this is in early-init.el
 ** For nostalgia my old theme
 #+BEGIN_SRC emacs-lisp :tangle no
@@ -46,11 +58,14 @@
 ** Use global-display-numbers, display path in title
 #+BEGIN_SRC emacs-lisp :tangle no
 (if (version<= "26" emacs-version)
-    (global-display-line-numbers-mode))
+    (global-display-line-numbers-mode)))
 
-(setq-default frame-title-format '("%f [%m] - emacs]"))
+
 #+END_SRC
-
+Change title to show buffer path
+#+begin_src emacs-lisp
+(setq-default frame-title-format '("%f [%m] - emacs]"))
+#+end_src
 ** Distinguish read only buffers visually
 
 To make things work properly you need to have run color-theme-initialize
@@ -129,16 +144,6 @@ To make things work properly you need to have run color-theme-initialize
 #+BEGIN_SRC emacs-lisp
 (setq compilation-ask-about-save nil)
 #+END_SRC
-* Create backups in separate directory
-#+BEGIN_SRC emacs-lisp
-(defvar backup-dir (concat "~/emacsbak/" (user-login-name) "/"))
-(setq backup-directory-alist (list (cons "." backup-dir)))
-(setq auto-save-list-file-prefix
-      (concat backup-dir ".auto-saves-"))
-(setq auto-save-file-name-transforms
-      `((".*" ,backup-dir t)))
-
-#+END_SRC
 * Buffer manipulation
 ** Smartparens
 #+BEGIN_SRC emacs-lisp
@@ -192,7 +197,10 @@ Also make right or left arrow keys abort the completion.
 ** Yafolding/sippet
 #+BEGIN_SRC emacs-lisp
 (use-package yafolding)
-(use-package yasnippet)
+(use-package yasnippet
+  :config (yas-global-mode 1)
+  (setq yas-snippet-dirs '("/home/lahtela/.emacs.d/elpa/yasnippet-snippets-20200802.1658/snippets" "~/.emacs.d/snippets")))
+(use-package yasnippet-snippets)
 #+END_SRC
 ** Diff-hl (find uncommitted changes)
 #+BEGIN_SRC emacs-lisp
@@ -387,7 +395,7 @@ Some usage through chords (see chords)
 (use-package helm-org-rifle)
 (helm-mode 1)
 (global-set-key (kbd "M-s M-s") 'isearch-forward)
-
+(use-package helm-projectile)
 #+END_SRC
 * Organizing and finding files and buffers
 ** Company
@@ -405,7 +413,8 @@ Some usage through chords (see chords)
 #+BEGIN_SRC emacs-lisp
 (use-package projectile
   :config
-  (setq-default helm-locate-project-list local-projects))
+  (setq-default helm-locate-project-list local-projects)
+  (projectile-mode t))
 #+END_SRC
 ** Treemacs
 #+BEGIN_SRC emacs-lisp
@@ -711,6 +720,15 @@ Only need the resizing functions now
   :config
   (shackle-mode t))
 #+END_SRC
+** Purpose
+TODO setup purpose
+#+begin_src emacs-lisp :tangle no
+(use-package window-purpose
+  :init
+  (require 'window-purpose)
+;;  (add-to-list)
+  (purpose-mode t))
+#+end_src
 * File editing modes
 *
 #+BEGIN_SRC emacs-lisp
@@ -731,7 +749,8 @@ Only need the resizing functions now
   (use-package dockerfile-mode)
   (use-package graphql)
   (use-package graphql-mode)
-  (use-package yaml-mode)
+  (use-package yaml-mode
+    :hook (yaml-mode . flycheck-mode))
 
   (use-package live-py-mode
     :config
@@ -758,77 +777,91 @@ Only need the resizing functions now
 #+BEGIN_SRC emacs-lisp
 (add-hook 'markdown-mode-hook 'flyspell-mode)
 #+END_SRC
-** Type/Javascript
+** DONE Type/Javascript
 #+BEGIN_SRC emacs-lisp
-  (use-package js2-mode
-    :mode "\\.js\\'"
-    :init
-   (add-hook 'js2-mode-hook #'js2-imenu-extras-mode)
-    (add-hook 'js2-mode-hook #'flymake-eslint-enable)
-    (setq js2-strict-missing-semi-warning nil)
-    (setf js2-mode-indent-inhibit-undo t)
-    (setq-default indent-tabs-mode nil)
 
-    :config
-    (setq lsp-eslint-server-command
-          '("node"
-            "/home/lahtela/Software/eslint/extension/server/out/eslintServer.js"
-            "--stdio"))
-    (with-eval-after-load "lsp-javascript-typescript"
-      (add-hook 'js2-mode-hook #'lsp))
-    (setq js2-basic-offset 2))
-  (defun setup-tide-mode ()
-    (interactive)
-    (tide-setup)
-    (flycheck-mode +1)
-    (setq flycheck-check-syntax-automatically '(save mode-enabled))
-    (eldoc-mode +1)
-    (tide-hl-identifier-mode +1)
-    ;; company is an optional dependency. You have to
-    ;; install it separately via package-install
-    ;; `M-x package-install [ret] company`
-    (company-mode +1))
+;(defun my-lsp-mode-before-save-hook ()
+;  (when (and lsp-mode (eq major-mode 'typescript-mode))
+;    (lsp-eslint-apply-all-fixes)))
 
-  (use-package web-mode
-    :ensure t
-    :mode (("\\.html?\\'" . web-mode)
-           ("\\.tsx\\'" . web-mode)
-           ("\\.jsx\\'" . web-mode))
-    :config
-    (setq web-mode-markup-indent-offset 2
-          web-mode-css-indent-offset 2
-          web-mode-code-indent-offset 2
-          web-mode-block-padding 2
-          web-mode-comment-style 2
+(use-package js2-mode
+  :mode "\\.js\\'"
+  :init
+  (add-hook 'js2-mode-hook #'js2-imenu-extras-mode)
+  (add-hook 'js2-mode-hook #'flymake-eslint-enable)
+;;  (add-hook 'before-save-hook #'my-lsp-mode-before-save-hook)
 
-          web-mode-enable-css-colorization t
-          web-mode-enable-auto-pairing t
-          web-mode-enable-comment-keywords t
-          web-mode-enable-current-element-highlight t
-          web-mode-enable-auto-indentation nil
-          )
-    )
+  (setq js2-strict-missing-semi-warning nil)
+  (setf js2-mode-indent-inhibit-undo t)
+  (setq-default indent-tabs-mode nil)
+
+  :config
+  (setq lsp-eslint-server-command
+        '("node"
+          "/home/lahtela/Software/eslint/extension/server/out/eslintServer.js"
+          "--stdio"))
+  (setq lsp-eslint-node-path "/home/lahtela/Software/node/")
+  (setq lsp-eslint-auto-fix-on-save t)
+  (setq lsp-eslint-validate '("javascript" "javascriptreact" "typescript"))
+  (setq lsp-eslint-trace-server nil)
 
 
-  (use-package typescript-mode
-    :ensure t
-    :config
-    (setq typescript-indent-level 2)
-    (add-hook 'typescript-mode #'subword-mode))
+  (with-eval-after-load "lsp-javascript-typescript"
+    (add-hook 'js2-mode-hook #'lsp))
+  (setq js2-basic-offset 2))
 
-  (use-package tide
-    :init
-    :ensure t
-    :after (typescript-mode company flycheck)
-    :hook ((typescript-mode . tide-setup)
-           (typescript-mode . tide-hl-identifier-mode)))
+(use-package web-mode
+  :ensure t
+  :mode (("\\.html?\\'" . web-mode)
+         ("\\.tsx\\'" . web-mode)
+         ("\\.jsx\\'" . web-mode))
+  :config
+  (setq web-mode-markup-indent-offset 2
+        web-mode-css-indent-offset 2
+        web-mode-code-indent-offset 2
+        web-mode-block-padding 2
+        web-mode-comment-style 2
 
-  (use-package css-mode
-    :config
-    (setq css-indent-offset 2))
+        web-mode-enable-css-colorization t
+        web-mode-enable-auto-pairing t
+        web-mode-enable-comment-keywords t
+        web-mode-enable-current-element-highlight t
+        web-mode-enable-auto-indentation nil))
+
+(defun ts-goto-test-or-source ()
+  "Switch between test and implementation"
+  (interactive)
+  (let* ((file (buffer-file-name))
+         (test (string-match "\\(.*?\\)\\(\.test\\)?\\(\.ts\\)$" file)))
+    (message "%s %s" (match-string 2 file) file)
+    (if (match-string 2 file)
+        (let ((source (replace-regexp-in-string "\.test" "" file)))
+          (if (file-exists-p source) (find-file source)))
+      (let ((test (concat (match-string 1 file) ".test" (match-string 3 file))))
+        (if (file-exists-p test) (find-file test))))))
+
+
+
+(use-package typescript-mode
+  :ensure t
+  :bind (("M-<return>" . ts-goto-test-or-source))
+  :config
+  (setq typescript-indent-level 2)
+  (add-hook 'typescript-mode #'subword-mode))
+
+;(use-package tide
+;  :init
+;  :ensure t
+;  :after (typescript-mode company flycheck)
+;  :hook ((typescript-mode . tide-setup)
+;         (typescript-mode . tide-hl-identifier-mode)))
+
+(use-package css-mode
+  :config
+  (setq css-indent-offset 2))
 
 (use-package jest
-:init (setq jest-executable "~/Software/nodejs/bin/npm test --"))
+  :init (setq jest-executable "~/Software/nodejs/bin/npm test --"))
 #+END_SRC
 ** Flycheck
 #+BEGIN_SRC emacs-lisp
@@ -838,6 +871,7 @@ Only need the resizing functions now
   (add-hook 'typescript-mode-hook 'flycheck-mode)
   (add-hook 'json-mode-hook 'flycheck-mode)
   (add-hook 'yaml-mode-hook flycheck-mode))
+
 #+END_SRC
 ** Python
 #+BEGIN_SRC emacs-lisp
@@ -853,18 +887,24 @@ Only need the resizing functions now
        (logview-mode . auto-revert-mode)
        (logview-mode . (lambda () (setq show-trailing-whitespace nil)))))
 #+end_src
-** LSP (disabled)
+** LSP
+
+LSP is set up, but does not trigger automatically from builds
+
 #+BEGIN_SRC emacs-lisp
 (use-package lsp
   :ensure lsp-mode
   :config
   (require 'lsp-clients)
+
   (add-hook 'lsp-after-open-hook 'lsp-enable-imenu)
   :init
   (setf lsp-eldoc-render-all nil)
   (setq lsp-inhibit-message t)
   (setq lsp-message-project-root-warning t))
-(use-package lsp-mode)
+(use-package lsp-mode
+  :config (setq lsp-clients-typescript-log-verbosity "debug")
+  (setq lsp-log-io 1))
 (use-package lsp-ui :commands lsp-ui-mode)
 (use-package helm-lsp :commands helm-lsp-workspace-symbol)
 (use-package lsp-treemacs
@@ -874,13 +914,17 @@ Only need the resizing functions now
   :hook ((c-mode c++-mode objc-mode cuda-mode) .
          (lambda () (require 'ccls) (lsp))))
 
- (use-package company-lsp
-   :config
-   (push 'company-lsp company-backends)
-   (add-hook 'js2-mode-hook #'lsp))
+(use-package company-lsp
+  :config
+  (push 'company-lsp company-backends)
+  (add-hook 'js2-mode-hook #'lsp))
 
 
 #+END_SRC
+** DAP
+#+begin_src emacs-lisp :tangle no
+(use-package dap-mode)
+#+end_src
 * Compilation modifications
 Change compilation directory
 #+begin_src emacs-lisp
@@ -889,6 +933,10 @@ Change compilation directory
   (let ((default-directory dir))
     (compile command)))
 #+end_src
+* Programming helpers
+
+
+
 * (Ma) Git
 #+BEGIN_SRC emacs-lisp
 (use-package magit)
@@ -923,19 +971,34 @@ Change compilation directory
 
 #+END_SRC
 * Terminal (vterm)
-Synchronize default-directory
+- Synchronize default-directory with the added vterm-eval-cmds
+- When scrolling up the buffer with ctrl-up, enable vterm-copy-mode
+- Add a binding to find-trace-paths to ctrl-. into path texts in traces
+
 #+begin_src emacs-lisp
+(use-package find-trace-paths
+  :quelpa (find-trace-paths
+           :fetcher github :repo "ration/find-trace-paths"))
+
+(defun my-vterm-backward-paragraph (&optional arg)
+    (interactive)
+  (unless vterm-copy-mode (vterm-copy-mode t))
+  (backward-paragraph arg))
 
 (defun vterm-update-pwd (path)
   (setq default-directory path))
+  (add-to-list 'shackle-rules
+               '("\\`\\*helm.*?\\*\\'" :regexp t :align t :size 0.9))
 
-;;(advice-remove 'find-file #'vterm-directory-sync) default-directory
 (if module-file-suffix
       (use-package vterm
-        :config (setq vterm-eval-cmds '(("find-file" find-file)
-                             ("message" message)
-                             ("vterm-clear-scrollback" vterm-clear-scrollback)
-                             ("update-pwd" vterm-update-pwd)))
+        :bind (:map vterm-mode-map
+                    (( "C-." . find-trace-paths)
+                     ( "C-<up>" . my-vterm-backward-paragraph)))
+        :config
+        (setq vterm-max-scrollback 10000)
+        (require 'vterm)
+        (add-to-list 'vterm-eval-cmds '("update-pwd" (lambda (path) (setq default-directory path))))
         :hook ((vterm-mode . (lambda () (setq show-trailing-whitespace nil))))))
 #+end_src
 * Windows OS
@@ -976,7 +1039,15 @@ Synchronize default-directory
 
 #+END_SRC
 * Global Bindings
+Various global bindings
 #+BEGIN_SRC emacs-lisp
+
+(defun kill-and-save ()
+  (interactive)
+  (progn (save-buffer (current-buffer)) (kill-current-buffer)))
+
+(global-set-key (kbd "ESC s-<f1>")  'kill-current-buffer)
+(global-set-key (kbd "ESC <f1>")  'kill-and-save)
 (global-set-key [f1]  'goto-line)
 (global-set-key [f2]  'helm-projects-find-files)
 (global-set-key [f3]  'helm-recentf)
@@ -1017,5 +1088,18 @@ Synchronize default-directory
 (use-package key-chord
   :config
   (key-chord-define-global ",," 'avy-goto-char-timer)
+  (key-chord-define-global "gg" 'helm-projectile)
+  (key-chord-define-global "xx" 'helm-M-x)
+  (key-chord-define-global "vv" 'goto-line)
   (key-chord-mode 1))
+#+end_src
+* Databases
+* Exit Hook
+Just save everything if we get TERM
+
+
+#+begin_src emacs-lisp
+(setq confirm-kill-processes nil)
+(defun save-all () (interactive) (save-some-buffers t))
+(add-hook 'kill-emacs-hook 'save-all)
 #+end_src
