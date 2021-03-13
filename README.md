@@ -1,2 +1,2 @@
 # init.el
-Emacs configuration
+Emacs configuration. Look at [settings.org](settings.org) for details.
