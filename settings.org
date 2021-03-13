@@ -1170,6 +1170,26 @@ My own task organizer stuff
   :config (key-chord-define-global "§§" 'chore-switch-to-note))
 #+end_src
 * Spell checking wcheck-mode
+
+If someone knows exactly how this works, I'd like to know!
+But something like this is needed:
+#+begin_src bash :tangle no
+apt-get install enchant-2 libenchant-voikko tmispell-voikko
+#+end_src
+
+This also relies on a script that allows feeding multiple dictionaries:
+#+begin_src bash :tangle no
+#!/bin/bash
+while read line
+do
+    MODE="-a"
+    if [ $1 == "-l" ]; then
+        MODE="-l"
+    fi
+    echo "$line" | enchant-2 $MODE -d en_US | enchant-2 $MODE -d fi_FI
+done < "${2:-/dev/stdin}"
+#+end_src
+
 #+begin_src emacs-lisp
 (use-package wcheck-mode
   :commands (wcheck-mode)
