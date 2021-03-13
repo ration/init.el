@@ -238,10 +238,12 @@ Also make right or left arrow keys abort the completion.
   (interactive "p")
   (delete-region (point) (progn (forward-word (- arg)) (point))))
 #+END_SRC
-** Avy
+** Avy / ace
 #+begin_src emacs-lisp
 (use-package avy
   :bind ("C-å" . avy-goto-char-timer))
+
+(use-package ace-jump-mode)
 #+end_src
 ** Bufler
 #+BEGIN_SRC emacs-lisp
@@ -716,6 +718,9 @@ TODO setup purpose
     (add-hook 'prog-mode-hook 'highlight-indent-guides-mode))
 #+END_SRC
 ** json
+
+If you regularly use JSON string payloads embedded in another payload, you can use this to extract the contents as prettified json.
+
 #+begin_src emacs-lisp
 (defun my-json-pretty-print-from-string-to-kill-ring (start end)
   "Copy contents of a embedded json object and copy the content pretty printed into kill ring"
