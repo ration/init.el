@@ -1,36 +1,36 @@
+* Initialization file for emacs
+
+Utilizes straight.el for most of the initalization stuff. Nativecomp branch is in use - this might have implications
+on the general usability of this configuration.
+
 * Load custom el and environment specific settings
 #+BEGIN_SRC emacs-lisp
+
   (let ((local (expand-file-name "local.el" user-emacs-directory)))
-    (if (file-exists-p local)
-        (load-file local)))
+  (message "Loading local settings %s" local)
+  (if (file-exists-p local)
+        (load-file local)
+	(message "WARNING - no local.el")))
+
+
+
 
   ;; Set Custom file to another place
   (setq custom-file (expand-file-name "custom.el" user-emacs-directory))
   (load custom-file 'noerror)
 
 #+END_SRC
-* Package management
-** QUELPA
-#+BEGIN_SRC emacs-lisp
-(use-package quelpa)
-(use-package quelpa-use-package)
-#+END_SRC
-** Trying packages
-#+BEGIN_SRC emacs-lisp
-(use-package try)
-#+END_SRC
 * Create backups in separate directory and disable lock files
 #+BEGIN_SRC emacs-lisp
 (setq create-lockfiles nil)
 
 (use-package no-littering
-:config (setq auto-save-file-name-transforms
-            `((".*" ,(no-littering-expand-var-file-name "auto-save/") t)))
-(require 'recentf)
+  :config (setq auto-save-file-name-transforms
+                `((".*" ,(no-littering-expand-var-file-name "auto-save/") t)))
+  (require 'recentf)
 (add-to-list 'recentf-exclude no-littering-var-directory)
 (add-to-list 'recentf-exclude no-littering-etc-directory))
 #+END_SRC
-
 * UI Look and feel. Note some of this is in early-init.el
 ** For nostalgia my old theme
 #+BEGIN_SRC emacs-lisp :tangle no
@@ -49,48 +49,14 @@
 #+END_SRC
 ** Theme
 #+BEGIN_SRC emacs-lisp
-(use-package idea-darkula-theme)
-;  (use-package color-theme-sanityinc-tomorrow
-;    :config
-;;    (color-theme-sanityinc-tomorrow-eighties))
-#+END_SRC
-
-** Use global-display-numbers, display path in title
-#+BEGIN_SRC emacs-lisp :tangle no
-(if (version<= "26" emacs-version)
-    (global-display-line-numbers-mode)))
-
-
+(use-package idea-darkula-theme
+  :config
+  (load-theme 'idea-darkula))
 #+END_SRC
 Change title to show buffer path
 #+begin_src emacs-lisp
 (setq-default frame-title-format '("%f [%m] - emacs]"))
 #+end_src
-** Distinguish read only buffers visually
-
-To make things work properly you need to have run color-theme-initialize
-
-#+begin_src emacs-lisp
-
-;;(defadvice load-theme (before theme-dont-propagate activate)
-;; (mapcar #'disable-theme custom-enabled-themes))
-(defun my-color-readonly ()
-  "Colorize buffer so it's evident that it's in read only")
-;  (if buffer-read-only
-;      (color-theme-buffer-local 'color-theme-robin-hood (current-buffer))
-;    (color-theme-buffer-local 'color-theme-matrix (current-buffer))))
-
-;;(face-attribute 'default :background)
-
-;(use-package color-theme-buffer-local
-;:init (add-hook 'read-only-mode-hook 'my-color-readonly))
-
-;;(face-attribute 'whitespace-trailing :background)
-;;(color-theme-buffer-local 'color-theme-matrix (current-buffer))
-
-;;(add-hook 'find-file-hook 'my-read-only-color)
-#+end_src
-
 * File formatting stuff
 #+BEGIN_SRC emacs-lisp
 (setq-default show-trailing-whitespace t)
@@ -135,7 +101,6 @@ To make things work properly you need to have run color-theme-initialize
 (advice-add 'org-protocol-capture :around
             #'my-org-protocol-store-link-advice)
 #+end_src
-
 * Google this
 #+BEGIN_SRC emacs-lisp
 (use-package google-this)
@@ -146,7 +111,9 @@ To make things work properly you need to have run color-theme-initialize
 #+END_SRC
 * Buffer manipulation
 ** Smartparens
-#+BEGIN_SRC emacs-lisp
+Feels like it gets is more in the way. The ctrl up down in context feels
+like a nice idea but it might need something like a hydra to be really useful.
+#+BEGIN_SRC emacs-lisp :tangle no
 (use-package smartparens
   :config
   (add-hook 'prog-mode-hook 'smartparens-mode)
@@ -168,7 +135,23 @@ To make things work properly you need to have run color-theme-initialize
 #+END_SRC
 ** Rainbow delimeters (Not enabled anywhere by default)
 #+BEGIN_SRC emacs-lisp
-(use-package rainbow-delimiters)
+(use-package rainbow-delimiters
+  :config
+  (custom-set-faces
+   ;; custom-set-faces was added by Custom.
+   ;; If you edit it by hand, you could mess it up, so be careful.
+   ;; Your init file should contain only one such instance.
+   ;; If there is more than one, they won't work right.
+   '(rainbow-delimiters-depth-1-face ((t (:foreground "dark orange"))))
+   '(rainbow-delimiters-depth-2-face ((t (:foreground "deep pink"))))
+   '(rainbow-delimiters-depth-3-face ((t (:foreground "chartreuse"))))
+   '(rainbow-delimiters-depth-4-face ((t (:foreground "deep sky blue"))))
+   '(rainbow-delimiters-depth-5-face ((t (:foreground "yellow"))))
+   '(rainbow-delimiters-depth-6-face ((t (:foreground "orchid"))))
+   '(rainbow-delimiters-depth-7-face ((t (:foreground "spring green"))))
+   '(rainbow-delimiters-depth-8-face ((t (:foreground "sienna1"))))))
+;;  :hook (prog-mode . rainbow-delimeters-mode))
+
 #+END_SRC
 ** Company
 Invert the navigation direction if the the completion popup-isearch-match is displayed on top (happens near the bottom of windows).
@@ -194,16 +177,18 @@ Also make right or left arrow keys abort the completion.
     :ensure t))
 #+END_SRC
 
-** Yafolding/sippet
+** (Ya)folding/sippet
 #+BEGIN_SRC emacs-lisp
 (use-package yafolding)
 (use-package yasnippet
-  :config (yas-global-mode 1)
-  (setq yas-snippet-dirs '("/home/lahtela/.emacs.d/elpa/yasnippet-snippets-20200802.1658/snippets" "~/.emacs.d/snippets")))
+  :config
+  (yas-global-mode 1)
+  (require 'yasnippet)
+  (add-to-list 'yas-snippet-dirs "~/.emacs.d/snippets"))
 (use-package yasnippet-snippets)
 #+END_SRC
 ** Diff-hl (find uncommitted changes)
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC emacs-lisp :tangle no
 (use-package diff-hl
   :config
     (add-hook 'prog-mode-hook 'smartparens-mode))
@@ -314,6 +299,8 @@ Also make right or left arrow keys abort the completion.
 Some usage through chords (see chords)
 #+begin_src emacs-lisp
 (use-package multiple-cursors
+  :config
+  (setq mc/always-run-for-all t)
   :bind ("C-<" . mc/mark-next-like-this)
         ("C--" . mc/edit-lines))
 
@@ -340,63 +327,11 @@ Some usage through chords (see chords)
 (use-package goto-last-change
 :bind ("C-§" . goto-last-change))
 #+end_src
-* Helm, Swoop and related
-#+BEGIN_SRC emacs-lisp
-(defun helm-execute-if-single-persistent-action (&optional attr split-onewindow)
-  "Execute persistent action if the candidate list is less than 2 OR if theres no input and only one non trivial thing to select from"
-  (interactive)
-  (with-helm-alive-p
-    (cond ((and (string= helm-input helm-ff-default-directory) (eq (helm-get-candidate-number) 3))
-           (progn
-             (helm-next-line)
-             (helm-next-line)
-             (helm-execute-persistent-action))
-           )
-          ((> (helm-get-candidate-number) 2) (double-flash-mode-line))
-          (t (helm-execute-persistent-action))
-          )))
-(use-package helm
-  :config
-  (setq helm-ff-allow-non-existing-file-at-point t)
-  :bind (("M-x" . helm-M-x)
-         ("C-x b" . helm-buffers-list)
-         ("C-c f" . helm-recentf)
-         ("M-y" . helm-show-kill-ring)
-
-         :map helm-map
-         ([tab] . helm-execute-if-single-persistent-action)
-         ("C-i" . helm-select-action)))
-(use-package helm-ag
-  :init (custom-set-variables
-         '(helm-follow-mode-persistent t)))
-
-(use-package helm-files
-  :ensure f
-  :bind (("C-x C-f" . helm-find-files)
-         :map helm-find-files-map
-         ("C-," . my-helm-ff-switch-to-fzf)
-         ("<C-backspace>" . helm-find-files-up-one-level)
-         :map helm-read-file-map
-         ("<C-backspace>" . helm-find-files-up-one-level))
-  :config
-  (unless helm-source-find-files
-    (setq helm-source-find-files (helm-make-source
-                                     "Find Files" 'helm-source-ffiles)))
-  (helm-add-action-to-source "C-, Switch to fzf" #'my-helm-run-fzf helm-source-find-files))
-(defun my-helm-swoop-pre-input-function ()
-  "")
-(use-package helm-swoop
-  :bind (("C-s" . helm-swoop))
-  :config
-  (setq helm-swoop-speed-or-color nil)
-  (setq helm-swoop-pre-input-function 'my-helm-swoop-pre-input-function)
-  (bind-keys :map helm-swoop-map
-             ("C-s" . kill-whole-line)))
-(use-package helm-org-rifle)
-(helm-mode 1)
-(global-set-key (kbd "M-s M-s") 'isearch-forward)
-(use-package helm-projectile)
-#+END_SRC
+** smart-mode-line
+#+begin_src emacs-lisp
+(use-package smart-mode-line
+  :config (setq sml/theme 'respectful))
+#+end_src
 * Organizing and finding files and buffers
 ** Company
 #+BEGIN_SRC emacs-lisp
@@ -417,7 +352,7 @@ Some usage through chords (see chords)
   (projectile-mode t))
 #+END_SRC
 ** Treemacs
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC emacs-lisp :tangle no
 (use-package treemacs
   :config (treemacs-follow-mode 1)
   (treemacs-filewatch-mode 1)
@@ -476,10 +411,26 @@ Unbind colliding mappings
 (define-key org-mode-map (kbd "M-<up>") nil)
 (define-key org-mode-map (kbd "M-<left>") nil)
 (define-key org-mode-map (kbd "M-<right>") nil)
+(define-key org-mode-map (kbd "ESC <left>") 'org-metaleft)
+
+
+;; (define-key org-agenda-mode-map (kbd "M-<down>") nil)
+;; (define-key org-agenda-mode-map (kbd "M-<up>") nil)
+;; (define-key org-agenda-mode-map (kbd "M-<left>") nil)
+;; (define-key org-agenda-mode-map (kbd "M-<right>") nil)
+;;
+;; (define-key org-agenda-keymap (kbd "M-<down>") nil)
+;; (define-key org-agenda-keymap (kbd "M-<up>") nil)
+;; (define-key org-agenda-keymap (kbd "M-<left>") nil)
+;; (define-key org-agenda-keymap (kbd "M-<right>") nil)
+
 
 #+end_src
-Journal, Rifle, gfm
-#+BEGIN_SRC emacs-lisp
+Journal, Rifle
+
+Org-journal doesn't seem to work with straight.
+
+#+BEGIN_SRC emacs-lisp :tangle no
 (require 'find-lisp)
 (setq calendar-week-start-day 1)
 (use-package org-journal
@@ -488,6 +439,10 @@ Journal, Rifle, gfm
   (setq org-journal-file-type "weekly")
   (setq org-journal-file-format "%Y-%m-%d.org")
   (setq org-journal-date-format "%y-%m-%d, %A"))
+#+END_SRC
+
+ox-gfm allows exporting Github Flavored markdown
+#+BEGIN_SRC emacs-lisp
 (use-package ox-gfm)
 (setq org-agenda-directory (concat dropbox-home "/Org/"))
 (setq org-agenda-files
@@ -498,7 +453,6 @@ Journal, Rifle, gfm
 
 (add-hook 'auto-save-hook 'org-save-all-org-buffers)
 (add-hook 'org-mode-hook 'flyspell-mode)
-
 
 (add-hook 'org-agenda-mode-hook (lambda () (setq show-trailing-whitespace nil)))
 (add-hook 'org-mode-hook
@@ -566,16 +520,15 @@ Journal, Rifle, gfm
 #+END_SRC
 ** org-clubhouse
 #+BEGIN_SRC emacs-lisp
-  (use-package org-clubhouse
-    :quelpa (org-clubhouse :fetcher github
-            :repo "glittershark/org-clubhouse")
-    :init (setq org-clubhouse-state-alist
-        '(("TODO"   . "Backlog")
-          ("ACTIVE" . "In Development")
-          ("PENDING" . "Pending")
-          ("REVIEW"   . "Ready for Review")
-          ("DONE"   . "Completed")))
-          (setq org-clubhouse-workflow-name "Development"))
+(use-package org-clubhouse
+  :straight (:host github :repo "glittershark/org-clubhouse")
+  :init (setq org-clubhouse-state-alist
+      '(("TODO"   . "Backlog")
+        ("ACTIVE" . "In Development")
+        ("PENDING" . "Pending")
+        ("REVIEW"   . "Ready for Review")
+        ("DONE"   . "Completed")))
+        (setq org-clubhouse-workflow-name "Development"))
 #+END_SRC
 ** Emphasis
 #+BEGIN_SRC emacs-lisp
@@ -591,7 +544,7 @@ Journal, Rifle, gfm
 (setq org-hide-emphasis-markers nil)
 #+END_SRC
 ** Org-analyzer
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC emacs-lisp :tangle no
 (use-package org-analyzer)
 #+END_SRC
 
@@ -600,13 +553,11 @@ Journal, Rifle, gfm
 (setq org-capture-templates (append
                              (quote
                               (("b" "Bloggging" entry
-                                (file (concat dropbox-home "/Org/blog.org"))
+                                (file (lambda () concat dropbox-home "/Org/blog.org")))
                                 "")
-                               ("r" "Roam" plain (function org-roam--capture-get-point)
-                                "%?"
-                                :file-name "%<%Y%m%d%H%M%S>-${slug}"
-                                :head "#+TITLE: ${title}\n"
-                                :unnarrowed t)
+                               ("n" "Note" entry
+                                (file (lambda () (concat dropbox-home "/Org/notes.org")))
+                                "* %?")
                                ("t" "Generic TODO" entry
                                 (file+headline "~/Org/todo.org" "Inbox")
                                 "* TODO %?")
@@ -698,7 +649,7 @@ Only need the resizing functions now
 ** Ace-windows
 #+begin_src emacs-lisp
 (use-package ace-window
-:bind (("§" . ace-window)))
+:bind (("C-x §" . ace-window)))
 #+end_src
 ** Shackle
 #+BEGIN_SRC emacs-lisp
@@ -712,7 +663,7 @@ Only need the resizing functions now
   (add-to-list 'shackle-rules
                '("\\`\\*Helm.*?\\*\\'" :regexp t :align right :size 0.4))
   (add-to-list 'shackle-rules
-               '("\\`\\*Helpful.*?\\*\\'" :regexp t :frame t))
+               '("\\`\\*Helpful.*?\\*\\'" :regexp t :align right :size 0.4))
 
   (add-to-list 'shackle-rules
                '("\\`\\*PLANTUML.*?\\*\\'" :popup t :regexp t :align below :size 0.4))
@@ -730,7 +681,7 @@ TODO setup purpose
   (purpose-mode t))
 #+end_src
 * File editing modes
-*
+  *
 #+BEGIN_SRC emacs-lisp
 
 (if (version<= emacs-version "26")
@@ -749,8 +700,12 @@ TODO setup purpose
   (use-package dockerfile-mode)
   (use-package graphql)
   (use-package graphql-mode)
+
   (use-package yaml-mode
-    :hook (yaml-mode . flycheck-mode))
+    :bind ("C-<tab>" . outline-cycle)
+    :hook (yaml-mode . outline-minor-mode)
+          (yaml-mode . (lambda ()  (progn (setq outline-regexp "^ *##")))))
+
 
   (use-package live-py-mode
     :config
@@ -780,16 +735,16 @@ TODO setup purpose
 ** DONE Type/Javascript
 #+BEGIN_SRC emacs-lisp
 
-;(defun my-lsp-mode-before-save-hook ()
-;  (when (and lsp-mode (eq major-mode 'typescript-mode))
-;    (lsp-eslint-apply-all-fixes)))
+(defun my-lsp-mode-before-save-hook ()
+  (when (and lsp-mode (eq major-mode 'typescript-mode))
+    (lsp-eslint-apply-all-fixes)))
 
 (use-package js2-mode
   :mode "\\.js\\'"
   :init
   (add-hook 'js2-mode-hook #'js2-imenu-extras-mode)
   (add-hook 'js2-mode-hook #'flymake-eslint-enable)
-;;  (add-hook 'before-save-hook #'my-lsp-mode-before-save-hook)
+  (add-hook 'before-save-hook #'my-lsp-mode-before-save-hook)
 
   (setq js2-strict-missing-semi-warning nil)
   (setf js2-mode-indent-inhibit-undo t)
@@ -832,8 +787,8 @@ TODO setup purpose
   "Switch between test and implementation"
   (interactive)
   (let* ((file (buffer-file-name))
-         (test (string-match "\\(.*?\\)\\(\.test\\)?\\(\.ts\\)$" file)))
-    (message "%s %s" (match-string 2 file) file)
+         (test (string-match "\\(.*?\\)\\(\.test\\)?\\(\.tsx?\\)$" file)))
+
     (if (match-string 2 file)
         (let ((source (replace-regexp-in-string "\.test" "" file)))
           (if (file-exists-p source) (find-file source)))
@@ -865,19 +820,21 @@ TODO setup purpose
 #+END_SRC
 ** Flycheck
 #+BEGIN_SRC emacs-lisp
-(use-package flycheck
-  :ensure t
-  :config
-  (add-hook 'typescript-mode-hook 'flycheck-mode)
-  (add-hook 'json-mode-hook 'flycheck-mode)
-  (add-hook 'yaml-mode-hook flycheck-mode))
+(use-package flycheck)
+;  :hook (yaml-mode . flycheck-mode))
+
 
 #+END_SRC
 ** Python
 #+BEGIN_SRC emacs-lisp
 (use-package elpy
-  :init (elpy-enable)
-  (setq elpy-rpc-python-command "python3"))
+  :config
+  (define-key elpy-mode-map (kbd "M-<down>") nil)
+  (define-key elpy-mode-map (kbd "M-<up>") nil)
+  (define-key elpy-mode-map (kbd "M-<left>") nil)
+  (define-key elpy-mode-map (kbd "M-<right>") nil)
+  (setq elpy-rpc-pythonpath "/home/lahtela/.emacs.d/straight/repos/elpy")
+:init (elpy-enable))
 #+END_SRC
 ** logview
 #+begin_src emacs-lisp
@@ -892,24 +849,30 @@ TODO setup purpose
 LSP is set up, but does not trigger automatically from builds
 
 #+BEGIN_SRC emacs-lisp
-(use-package lsp
-  :ensure lsp-mode
-  :config
-  (require 'lsp-clients)
 
-  (add-hook 'lsp-after-open-hook 'lsp-enable-imenu)
-  :init
-  (setf lsp-eldoc-render-all nil)
-  (setq lsp-inhibit-message t)
-  (setq lsp-message-project-root-warning t))
+;;(use-package lsp)
+;;  :ensure lsp-mode
+;;  :config
+;;  (require 'lsp-clients)
+
+;;  (add-hook 'lsp-after-open-hook 'lsp-enable-imenu)
+;;  :init
+;;  (setf lsp-eldoc-render-all nil)
+;;  (setq lsp-inhibit-message t)
+;;  (setq lsp-message-project-root-warning t))
+
 (use-package lsp-mode
   :config (setq lsp-clients-typescript-log-verbosity "debug")
   (setq lsp-log-io 1))
+
 (use-package lsp-ui :commands lsp-ui-mode)
 (use-package helm-lsp :commands helm-lsp-workspace-symbol)
-(use-package lsp-treemacs
-  :config (lsp-treemacs-sync-mode 1)
-  :commands lsp-treemacs-errors-list)
+;(use-package lsp-treemacs
+;  :config (lsp-treemacs-sync-mode 1)
+;  :commands lsp-treemacs-errors-list)
+
+(use-package lsp-java)
+
 (use-package ccls
   :hook ((c-mode c++-mode objc-mode cuda-mode) .
          (lambda () (require 'ccls) (lsp))))
@@ -925,6 +888,19 @@ LSP is set up, but does not trigger automatically from builds
 #+begin_src emacs-lisp :tangle no
 (use-package dap-mode)
 #+end_src
+** Kotlin
+#+begin_src emacs-lisp :tangle no
+(use-package kotlin-mode)
+#+end_src
+** CSharp
+#+begin_src emacs-lisp :tangle no
+(use-package csharp-mode)
+#+end_src
+** Clojure
+#+begin_src emacs-lisp
+(use-package clojure-mode)
+(use-package cider)
+#+end_src
 * Compilation modifications
 Change compilation directory
 #+begin_src emacs-lisp
@@ -934,9 +910,73 @@ Change compilation directory
     (compile command)))
 #+end_src
 * Programming helpers
+* Elfeed (RSS reader)
+#+begin_src emacs-lisp
+(use-package elfeed)
+#+end_src
+* UUID
+#+begin_src emacs-lisp
+(use-package uuid)
+#+end_src
 
+* Helm, Swoop and related
+#+BEGIN_SRC emacs-lisp
+(defun helm-execute-if-single-persistent-action (&optional attr split-onewindow)
+  "Execute persistent action if the candidate list is less than 2 OR if theres no input and only one non trivial thing to select from"
+  (interactive)
+  (with-helm-alive-p
+    (cond ((and (string= helm-input helm-ff-default-directory) (eq (helm-get-candidate-number) 3))
+           (progn
+             (helm-next-line)
+             (helm-next-line)
+             (helm-execute-persistent-action))
+           )
+          ((> (helm-get-candidate-number) 2) (double-flash-mode-line))
+          (t (helm-execute-persistent-action))
+          )))
 
+(use-package helm
+  :config
+  (require 'helm-files)
+  (setq helm-ff-allow-non-existing-file-at-point t)
+  (unless (boundp 'helm-source-find-files)
+    (setq helm-source-find-files (helm-make-source
+                                     "Find Files" 'helm-source-ffiles)))
+  (add-hook
+   'helm-find-files-after-init-hook
+   (lambda () (helm-add-action-to-source "C-, Switch to fzf" #'my-helm-run-fzf helm-source-find-files)))
+  :bind (("M-x" . helm-M-x)
+         ("C-x b" . helm-buffers-list)
+         ("C-c f" . helm-recentf)
+         ("M-y" . helm-show-kill-ring)
 
+         ("C-x C-f" . helm-find-files)
+         :map helm-find-files-map
+         ("C-," . my-helm-ff-switch-to-fzf)
+         ("<C-backspace>" . helm-find-files-up-one-level)
+         :map helm-read-file-map
+         ("<C-backspace>" . helm-find-files-up-one-level)
+
+         :map helm-map
+         ([tab] . helm-execute-if-single-persistent-action)
+         ("C-i" . helm-select-action)))
+
+(use-package helm-ag
+  :init (custom-set-variables
+         '(helm-follow-mode-persistent t)))
+(defun my-helm-swoop-pre-input-function () "")
+(use-package helm-swoop
+  :bind (("C-s" . helm-swoop))
+  :config
+  (setq helm-swoop-speed-or-color nil)
+  (setq helm-swoop-pre-input-function 'my-helm-swoop-pre-input-function)
+  (bind-keys :map helm-swoop-map
+             ("C-s" . kill-whole-line)))
+(use-package helm-org-rifle)
+(helm-mode 1)
+(global-set-key (kbd "M-s M-s") 'isearch-forward)
+(use-package helm-projectile)
+#+END_SRC
 * (Ma) Git
 #+BEGIN_SRC emacs-lisp
 (use-package magit)
@@ -960,13 +1000,26 @@ Change compilation directory
   (setq easy-jekyll-url "https://lahtela.me")
   (setq markdown-command "pandoc -f markdown -t html -s --mathjax --highlight-style=pygments"))
 #+END_SRC
-* Dashboard
-#+BEGIN_SRC emacs-lisp
+* Save bookmarks always
+If you set the variable bookmark-save-flag to 1, each command that sets a bookmark will also save your bookmarks; this
+way, you don’t lose any bookmark values even if Emacs crashes. The value, if a number, says how many bookmark
+modifications should go by between saving. If you set this variable to nil, Emacs only saves bookmarks if you explicitly
+use M-x bookmark-save.
+#+begin_src emacs-list
 (setq bookmark-save-flag 1)
 (require 'bookmark)
 (bookmark-bmenu-list)
+
+#+end_src
+* Dashboard
+
+#+BEGIN_SRC emacs-lisp
 (use-package dashboard
-  :config
+  :demand t
+  :init
+ ;; Some org versions had this bug
+  (setq org-priority-highest org-highest-priority)
+  (setq org-priority-lowest org-lowest-priority)
   (dashboard-setup-startup-hook))
 
 #+END_SRC
@@ -977,8 +1030,7 @@ Change compilation directory
 
 #+begin_src emacs-lisp
 (use-package find-trace-paths
-  :quelpa (find-trace-paths
-           :fetcher github :repo "ration/find-trace-paths"))
+  :straight (:host github :repo "ration/find-trace-paths"))
 
 (defun my-vterm-backward-paragraph (&optional arg)
     (interactive)
@@ -1065,6 +1117,7 @@ Various global bindings
 (global-set-key (kbd "M-k") 'kill-line-without-copy)
 
 (global-set-key (kbd "C-§") 'whitespace-mode)
+(global-set-key (kbd "s-§") (lambda () (interactive) (switch-to-buffer current-notes-file)))
 (global-set-key (kbd "M-<up>") 'windmove-up)
 (global-set-key (kbd "M-<down>") 'windmove-down)
 (global-set-key (kbd "M-<left>") 'windmove-left)
@@ -1091,9 +1144,70 @@ Various global bindings
   (key-chord-define-global "gg" 'helm-projectile)
   (key-chord-define-global "xx" 'helm-M-x)
   (key-chord-define-global "vv" 'goto-line)
+  (key-chord-define-global "bb" 'purpose-switch-buffer-overload)
   (key-chord-mode 1))
 #+end_src
 * Databases
+* AWS SAW
+
+Read AWS logs from emacs.
+
+#+begin_src emacs-lisp
+(use-package aws-saw
+  :straight (:host github :repo "ration/aws-saw.el"))
+#+end_src
+
+* Task organizer
+My own task organizer stuff
+#+begin_src emacs-lisp
+(use-package chore
+  :straight (:host github :repo "ration/chore.el")
+  :config (key-chord-define-global "§§" 'chore-switch-to-note))
+#+end_src
+* Spell checking wcheck-mode
+#+begin_src emacs-lisp
+(use-package wcheck-mode
+  :commands (wcheck-mode)
+  :init
+  (custom-set-faces
+    '(wcheck-default-face ((t (:underline (:color: "red" :style wave)))))
+    )
+
+  (setq wcheck-language-data
+    '
+    (
+      ("American English"
+        (program . "/usr/bin/enchant-2")
+        (args "-l" "-d" "en_US")
+        (action-program . "/usr/bin/enchant-2")
+        (action-args "-a" "-d" "en_US")
+        (action-parser . enchant-suggestions-menu)
+        (read-or-skip-faces
+          ;; Only check comments & strings.
+          ((emacs-lisp-mode c-mode)
+            read font-lock-comment-face
+            read font-lock-string-face
+            )
+          (nil))
+        )
+      ("Finnish"
+        (program . "/usr/bin/enchant-2")
+        (args "-l" "-d" "fi_FI")
+        (action-program . "/usr/bin/enchant-2")
+        (action-args "-a" "-d" "fi_FI")
+        (action-parser . enchant-suggestions-menu)
+      )
+      ("Finglish"
+        (program . "/home/lahtela/bin/finglish")
+        (args "-l" )
+        (action-program . "/home/lahtela/bin/finglish")
+        (action-args "-a")
+        (action-parser . enchant-suggestions-menu)
+      )
+    ))
+  (setq wcheck-language "Finglish")
+  )
+#+end_src
 * Exit Hook
 Just save everything if we get TERM
 
