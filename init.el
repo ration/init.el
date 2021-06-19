@@ -6,6 +6,10 @@
 
 (load-file (expand-file-name "early-init.el" user-emacs-directory))
 
+;;
+;; Straight.el
+;;
+
 (defvar bootstrap-version)
 (let ((bootstrap-file
        (expand-file-name "straight/repos/straight.el/bootstrap.el" user-emacs-directory))
@@ -25,27 +29,35 @@
 
 (message (format "%s" load-path))
 (setq load-prefer-newer t)
+
+
+;;
+;; Load other packages from settings.org
+;;
 ;;;; Some settings before even entering the actual settings file
 ;;;; Native indentation of source blocks without indentation
 (setq org-edit-src-content-indentation 0)
 (setq org-src-tab-acts-natively t)
 (require 'org)
-(org-babel-load-file
+;; don't use org-babel-load-file directly because symlinks haywire the org-file-newer-than-p
+;; detection
+(defun my-org-babel-load-file (file &optional compile)
+  "Load Emacs Lisp source code blocks in the Org FILE.
+This function exports the source code using `org-babel-tangle'
+and then loads the resulting file using `load-file'.  With
+optional prefix argument COMPILE, the tangled Emacs Lisp file is
+byte-compiled before it is loaded."
+  (interactive "fFile to load: \nP")
+  (let* ((tangled-file (concat (file-name-sans-extension file) ".el")))
+    (org-babel-tangle-file file tangled-file "emacs-lisp")
+    (if compile
+	(progn
+	  (byte-compile-file tangled-file 'load)
+	  (message "Compiled and loaded %s" tangled-file))
+      (load-file tangled-file)
+      (message "Loaded %s" tangled-file))))
+
+(my-org-babel-load-file
  (expand-file-name "settings.org"
                    user-emacs-directory))
 
-(put 'upcase-region 'disabled nil)
-(put 'erase-buffer 'disabled nil)
-(custom-set-variables
- ;; custom-set-variables was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(custom-safe-themes
-   '("02591317120fb1d02f8eb4ad48831823a7926113fa9ecfb5a59742420de206e0" default)))
-(custom-set-faces
- ;; custom-set-faces was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- )

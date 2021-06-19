@@ -1,25 +1,34 @@
 * Initialization file for emacs
 
-Utilizes straight.el for most of the initalization stuff. Nativecomp branch is in use - this might have implications
-on the general usability of this configuration.
+Utilizes straight.el for most of the initalization stuff.
 
 * Load custom el and environment specific settings
-#+BEGIN_SRC emacs-lisp
 
-  (let ((local (expand-file-name "local.el" user-emacs-directory)))
+  Override some settings from a local only configuration file
+
+#+BEGIN_SRC emacs-lisp
+(setq my-sync-gcal t)
+(setq my-work-email-address "lahtela@iki.fi")
+(setq my-work-email-signature (concat
+		       "Tatu Lahtela\n"
+		       "lahtela@iki.fi"))
+
+(let ((local (expand-file-name "local.el" user-emacs-directory)))
   (message "Loading local settings %s" local)
   (if (file-exists-p local)
-        (load-file local)
-	(message "WARNING - no local.el")))
+      (load-file local)
+    (message "WARNING - no local.el")))
 
-
-
-
-  ;; Set Custom file to another place
-  (setq custom-file (expand-file-name "custom.el" user-emacs-directory))
-  (load custom-file 'noerror)
+;; Set Custom file to another place
+(setq custom-file (expand-file-name "custom.el" user-emacs-directory))
+(load custom-file 'noerror)
 
 #+END_SRC
+
+* Don't pop up the Warnings buffer on uninteresting stuff
+#+begin_src emacs-lisp
+(setq warning-minimum-level :error)
+#+end_src
 * Create backups in separate directory and disable lock files
 #+BEGIN_SRC emacs-lisp
 (setq create-lockfiles nil)
@@ -34,24 +43,26 @@ on the general usability of this configuration.
 * UI Look and feel. Note some of this is in early-init.el
 ** For nostalgia my old theme
 #+BEGIN_SRC emacs-lisp :tangle no
-  (defun theme-slate-grey (&optional frame)
-    "Set custom background color."
-    (with-selected-frame (or frame (selected-frame))
-      (set-background-color "DarkSlateGray")
-      (set-face-background 'mode-line "Wheat")
-      (set-face-foreground 'mode-line "DarkSlateGray")
-      (set-face-background 'mode-line"LightSlateGray")
-      (set-face-foreground 'mode-line "Wheat")
-      (set-background-color "DarkSlateGray")
-      (set-foreground-color  "Wheat")
-      ))
+(defun theme-slate-grey (&optional frame)
+  "Set custom background color."
+  (with-selected-frame (or frame (selected-frame))
+    (set-background-color "DarkSlateGray")
+    (set-face-background 'mode-line "Wheat")
+    (set-face-foreground 'mode-line "DarkSlateGray")
+     (set-face-background 'mode-line"LightSlateGray")
+    (set-face-foreground 'mode-line "Wheat")
+    (set-background-color "DarkSlateGray")
+    (set-foreground-color  "Wheat")
+    ))
 
 #+END_SRC
 ** Theme
 #+BEGIN_SRC emacs-lisp
-(use-package idea-darkula-theme
-  :config
-  (load-theme 'idea-darkula))
+(use-package atom-dark-theme
+  :config (load-theme 'atom-dark))
+;;(use-package idea-darkula-theme
+;;  :config
+;;  (load-theme 'idea-darkula))
 #+END_SRC
 Change title to show buffer path
 #+begin_src emacs-lisp
@@ -287,6 +298,35 @@ Also make right or left arrow keys abort the completion.
       (message "Copied buffer file name '%s' to the clipboard." filename))))
 
 #+end_src
+** Dired related stuff
+
+   #+begin_src emacs-lisp
+(use-package dired-narrow
+  :bind (:map dired-mode-map
+              ("/" . dired-narrow)))
+   #+end_src
+
+   #+begin_src emacs-lisp
+(use-package vscode-icon
+  :commands (vscode-icon-for-file))
+   (use-package dired-sidebar
+     :bind (("C-x C-n" . dired-sidebar-toggle-sidebar))
+     :ensure t
+     :commands (dired-sidebar-toggle-sidebar)
+     :init
+     (add-hook 'dired-sidebar-mode-hook
+               (lambda ()
+                 (unless (file-remote-p default-directory)
+                   (auto-revert-mode))))
+     :config
+     (push 'toggle-window-split dired-sidebar-toggle-hidden-commands)
+     (push 'rotate-windows dired-sidebar-toggle-hidden-commands)
+
+     (setq dired-sidebar-subtree-line-prefix "__")
+     (setq dired-sidebar-theme 'vscode)
+     (setq dired-sidebar-use-term-integration t)
+     (setq dired-sidebar-use-custom-font t))
+   #+end_src
 ** sudo-save
 #+BEGIN_SRC emacs-lisp
 (defun sudo-save ()
@@ -330,7 +370,7 @@ Some usage through chords (see chords)
 :bind ("C-§" . goto-last-change))
 #+end_src
 ** smart-mode-line
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
 (use-package smart-mode-line
   :config (setq sml/theme 'respectful))
 #+end_src
@@ -426,19 +466,24 @@ Unbind colliding mappings
 ;; (define-key org-agenda-keymap (kbd "M-<left>") nil)
 ;; (define-key org-agenda-keymap (kbd "M-<right>") nil)
 
+(unless (boundp 'org-clocking-buffer)
+  (defalias 'org-clocking-buffer #'org-clock-is-active))
 
+(org-babel-do-load-languages
+ 'org-babel-load-languages
+ '((python . t)))
 #+end_src
 Journal, Rifle
 
 Org-journal doesn't seem to work with straight.
 
-#+BEGIN_SRC emacs-lisp :tangle no
+#+BEGIN_SRC emacs-lisp
 (require 'find-lisp)
 (setq calendar-week-start-day 1)
 (use-package org-journal
   :init
-  (setq org-journal-dir (concat dropbox-home "Org/Journal"))
-  (setq org-journal-file-type "weekly")
+  (setq org-journal-dir "~/Org/Journal")
+  (setq org-journal-file-type 'weekly)
   (setq org-journal-file-format "%Y-%m-%d.org")
   (setq org-journal-date-format "%y-%m-%d, %A"))
 #+END_SRC
@@ -446,19 +491,22 @@ Org-journal doesn't seem to work with straight.
 ox-gfm allows exporting Github Flavored markdown
 #+BEGIN_SRC emacs-lisp
 (use-package ox-gfm)
-(setq org-agenda-directory (concat dropbox-home "/Org/"))
+(require 'find-lisp)
+(setq org-agenda-directory "~/Org/")
 (setq org-agenda-files
       (find-lisp-find-files org-agenda-directory "\.org$"))
 (setq-default org-catch-invisible-edits 'smart)
-(setq org-default-notes-file (concat dropbox-home "/Documents/Orgzly/todo.org"))
+(setq org-default-notes-file "~/Org/notes.org")
 (setq org-refile-targets '((org-agenda-files . (:maxlevel . 6))))
 
 (add-hook 'auto-save-hook 'org-save-all-org-buffers)
 (add-hook 'org-mode-hook 'flyspell-mode)
 
 (add-hook 'org-agenda-mode-hook (lambda () (setq show-trailing-whitespace nil)))
-(add-hook 'org-mode-hook
-          (lambda () (add-hook 'before-save-hook 'cleanup-buffer nil 'local)))
+;; (add-hook 'org-mode-hook
+;;          (lambda () (add-hook 'before-save-hook 'cleanup-buffer nil 'local)))
+
+
 (use-package org-super-agenda)
 #+END_SRC
 ** Plantuml
@@ -555,10 +603,10 @@ ox-gfm allows exporting Github Flavored markdown
 (setq org-capture-templates (append
                              (quote
                               (("b" "Bloggging" entry
-                                (file (lambda () concat dropbox-home "/Org/blog.org")))
+                                (file (lambda () "~/Org/blog.org"))
                                 "")
                                ("n" "Note" entry
-                                (file (lambda () (concat dropbox-home "/Org/notes.org")))
+                                (file (lambda () "~/Org/notes.org"))
                                 "* %?")
                                ("t" "Generic TODO" entry
                                 (file+headline "~/Org/todo.org" "Inbox")
@@ -592,22 +640,7 @@ If org-cal keys has been set install org-gcal and add a sync for it in agenda
     (use-package org-gcal
       :config (define-key org-agenda-mode-map (kbd "ö") 'org-gcal-fetch)))
 #+end_src
-** Org-Roam (disabled)
-#+BEGIN_SRC emacs-lisp :tangle no
-(use-package org-roam
-:hook (after-init . org-roam-mode)
-:custom (org-roam-directory  org-agenda-directory)
-        (org-roam-db-location (concat org-agenda-directory "roam.db"))
-      :bind (:map org-roam-mode-map
-              (("C-c n l" . org-roam)
-               ("C-c n f" . org-roam-find-file)
-               ("C-c n g" . org-roam-show-graph))
-              :map org-mode-map
-              (("C-c n i" . org-roam-insert))))
-(use-package org-roam-server
-  :custom org-roam-server-port 9090)
-#+END_SRC
-** todoist
+** Todoist
 #+begin_src emacs-lisp
 (if (boundp 'todoist-token)
     (use-package todoist
@@ -868,6 +901,8 @@ LSP is set up, but does not trigger automatically from builds
 
 (use-package lsp-mode
   :config (setq lsp-clients-typescript-log-verbosity "debug")
+  (setq gc-cons-threshold 100000000)
+  (setq lsp-file-watch-threshold 30000)
   (setq lsp-log-io 1))
 
 (use-package lsp-ui :commands lsp-ui-mode)
@@ -882,10 +917,10 @@ LSP is set up, but does not trigger automatically from builds
   :hook ((c-mode c++-mode objc-mode cuda-mode) .
          (lambda () (require 'ccls) (lsp))))
 
-(use-package company-lsp
-  :config
-  (push 'company-lsp company-backends)
-  (add-hook 'js2-mode-hook #'lsp))
+;;(use-package company-lsp
+;;  :config
+;;  (push 'company-lsp company-backends)
+;;  (add-hook 'js2-mode-hook #'lsp))
 
 
 #+END_SRC
@@ -915,10 +950,153 @@ Change compilation directory
     (compile command)))
 #+end_src
 * Programming helpers
+* Lastpass
+#+begin_example emacs-lisp
+(use-package lastpass
+ :config
+ (setq lastpass-user "lahtela@iki.fi")
+ (setq lastpass-trust-login t)
+ (lastpass-auth-source-enable))
+#+end_example
 * Elfeed (RSS reader)
 #+begin_src emacs-lisp
-(use-package elfeed)
+(defun my-elfeed-tag-sort (a b)
+;  (message (format "%s" a))
+  (let* ((a-tags (format "%s" (elfeed-entry-tags a)))
+         (b-tags (format "%s" (elfeed-entry-tags b))))
+    (if (string= a-tags b-tags)
+        (< (elfeed-entry-date b) (elfeed-entry-date a)))
+    (string< a-tags b-tags)))
+
+(use-package elfeed
+  :config
+    (setq shr-width 80) ;; Read view narrowing
+    (setf elfeed-search-sort-function #'my-elfeed-tag-sort))
+(use-package elfeed-goodies
+:config (elfeed-goodies/setup))
+
+;; (setq elfeed-log-level 'debug)
+(use-package elfeed-protocol
+  :straight (elfeed-protocol
+             :local-repo "~/git/own/github/elfeed-protocol"
+             :type git)
+  :config
+  (setq elfeed-use-curl t)
+  (setq elfeed-protocol-ttrss-maxsize 2000) ;; bigger than 200 is invalid (unless you hack it ;)
+  (setq elfeed-feeds
+      '(
+        ("ttrss+https://admin@lahtela.me/tt"
+         :use-authinfo t
+        )))
+  (elfeed-protocol-enable))
+;;(use-package elfeed-org
+;;  :config
+;;  (setq rmh-elfeed-org-files (list (concat dropbox-home "Org/elfeed.org")))
+;;  (elfeed-org))
+(use-package elfeed-dashboard
+  :config
+  (global-set-key (kbd "C-c e") 'elfeed-dashboard)
+  (setq elfeed-dashboard-file "~/Org/elfeed-dashboard.org")
+  ;; update feed counts on elfeed-quit
+  (advice-add 'elfeed-search-quit-window :after #'elfeed-dashboard-update-links))
 #+end_src
+Display dates on the feeds
+#+begin_src emacs-lisp
+(defun elfeed-goodies/search-header-draw ()
+  "Returns the string to be used as the Elfeed header."
+  (if (zerop (elfeed-db-last-update))
+      (elfeed-search--intro-header)
+    (let* ((separator-left (intern (format "powerline-%s-%s"
+                                           elfeed-goodies/powerline-default-separator
+                                           (car powerline-default-separator-dir))))
+           (separator-right (intern (format "powerline-%s-%s"
+                                            elfeed-goodies/powerline-default-separator
+                                            (cdr powerline-default-separator-dir))))
+           (db-time (seconds-to-time (elfeed-db-last-update)))
+           (stats (-elfeed/feed-stats))
+           (search-filter (cond
+                           (elfeed-search-filter-active
+                            "")
+                           (elfeed-search-filter
+                            elfeed-search-filter)
+                           (""))))
+      (if (>= (window-width) (* (frame-width) elfeed-goodies/wide-threshold))
+          (search-header/draw-wide separator-left separator-right search-filter stats db-time)
+        (search-header/draw-tight separator-left separator-right search-filter stats db-time)))))
+
+(defun elfeed-goodies/entry-line-draw (entry)
+  "Print ENTRY to the buffer."
+
+  (let* ((title (or (elfeed-meta entry :title) (elfeed-entry-title entry) ""))
+         (date (elfeed-search-format-date (elfeed-entry-date entry)))
+         (title-faces (elfeed-search--faces (elfeed-entry-tags entry)))
+         (feed (elfeed-entry-feed entry))
+         (feed-title
+          (when feed
+            (or (elfeed-meta feed :title) (elfeed-feed-title feed))))
+         (tags (mapcar #'symbol-name (elfeed-entry-tags entry)))
+         (tags-str (concat "[" (mapconcat 'identity tags ",") "]"))
+         (title-width (- (window-width) elfeed-goodies/feed-source-column-width
+                         elfeed-goodies/tag-column-width 4))
+         (title-column (elfeed-format-column
+                        title (elfeed-clamp
+                               elfeed-search-title-min-width
+                               title-width
+                               title-width)
+                        :left))
+         (tag-column (elfeed-format-column
+                      tags-str (elfeed-clamp (length tags-str)
+                                             elfeed-goodies/tag-column-width
+                                             elfeed-goodies/tag-column-width)
+                      :left))
+         (feed-column (elfeed-format-column
+                       feed-title (elfeed-clamp elfeed-goodies/feed-source-column-width
+                                                elfeed-goodies/feed-source-column-width
+                                                elfeed-goodies/feed-source-column-width)
+                       :left)))
+
+    (if (>= (window-width) (* (frame-width) elfeed-goodies/wide-threshold))
+        (progn
+          (insert (propertize date 'face 'elfeed-search-date-face) " ")
+          (insert (propertize feed-column 'face 'elfeed-search-feed-face) " ")
+          (insert (propertize tag-column 'face 'elfeed-search-tag-face) " ")
+          (insert (propertize title 'face title-faces 'kbd-help title)))
+      (insert (propertize title 'face title-faces 'kbd-help title)))))
+
+#+end_src
+
+Automatic filtering of some entries
+#+begin_src emacs-lisp
+
+(setq my-elfeed-filter-list '("Apple" "Some Covid Links" ))
+
+
+(defun my-emacs-filter (entry)
+  (when (cl-some (lambda (pred) (string-match pred (elfeed-entry-title entry))) my-elfeed-filter-list)
+    (elfeed-untag entry 'unread)))
+
+(defun my-elfeed-filter-uninteresting ()
+  (interactive)
+  (mapcar 'my-emacs-filter elfeed-search-entries)
+  (elfeed-search-update :force))
+
+
+(add-hook 'elfeed-new-entry-hook #'my-emacs-filter)
+#+end_src
+
+Filter feed to current topic
+
+#+begin_src emacs-lisp
+(defun my-elfeed-filter-current-feed ()
+  (interactive)
+  (let* ((entry (elfeed-search-selected :single))
+         (feed (elfeed-entry-feed entry))
+         (feed-title (elfeed-feed-title feed)))
+    (with-current-buffer (elfeed-search-buffer)
+      (setf elfeed-search-filter (format "%s %s" elfeed-search-filter feed-title))
+    (elfeed-search-update :force))))
+#+end_src
+
 * UUID
 #+begin_src emacs-lisp
 (use-package uuid)
@@ -983,8 +1161,24 @@ Change compilation directory
 (use-package helm-projectile)
 #+END_SRC
 * (Ma) Git
+Add diffall to command list
 #+BEGIN_SRC emacs-lisp
-(use-package magit)
+
+(transient-define-suffix magit-diffall (args)
+  "Invoke diffall against branch or commit.
+"
+  (interactive (list (magit-read-other-branch-or-commit "Diff" t "origin/master"))
+  (run-hooks 'magit-credential-hook)
+  (magit-run-git-async "diffall" args)))
+
+
+(use-package magit
+  :config
+  (transient-bind-q-to-quit)
+  (transient-insert-suffix 'magit-diff "d" '("a" "Diffall" magit-diffall)))
+
+
+
 (use-package forge)
 #+END_SRC
 ** ediff
@@ -1017,17 +1211,77 @@ use M-x bookmark-save.
 
 #+end_src
 * Dashboard
-
 #+BEGIN_SRC emacs-lisp
+
+(defun dashboard-insert-mu4e (list-size)
+  (dashboard-insert-section
+   "Mu4e"
+   (dashboard-subseq '("Dashboard" "Work INBOX") 0 list-size)
+   list-size
+   "e"
+   `(lambda (&rest ignore) (pcase ,el
+                             ("Dashboard" (mu4e))
+                             ("Work INBOX" (mu4e-headers-search "maildir:\"/Work/INBOX\""))))
+   (format "%s" el)))
+
+
+(defun dashboard-insert-elfeed (list-size)
+  (dashboard-insert-section
+   (format "Elfeed (%s unread)" (elfeed-dashboard-query-count "+unread"))
+   (dashboard-subseq '("Dashboard" "Unread") 0 list-size)
+   list-size
+   "u"
+;;   `(lambda (&rest ignore) (let() (elfeed-update) (elfeed-dashboard)))
+   `(lambda (&rest ignore) (pcase ,el
+                             ("Dashboard" (let() (elfeed-update) (elfeed-dashboard)))
+                             ("Unread" (elfeed))))
+    (format "%s" el)))
+
 (use-package dashboard
   :demand t
   :init
- ;; Some org versions had this bug
+  ;; Some org versions had this bug
   (setq org-priority-highest org-highest-priority)
   (setq org-priority-lowest org-lowest-priority)
+
+
+  :config
+  (require 'dashboard)
+  (add-to-list 'dashboard-item-generators  '(elfeed . dashboard-insert-elfeed))
+  (add-to-list 'dashboard-item-generators  '(mu4e . dashboard-insert-mu4e))
+  (setq dashboard-items '(;;(recents  . 5)
+                        (bookmarks . 5)
+                        ;; (projects . 5)
+                        (agenda . 5)
+                        (mu4e . 5)
+                        (elfeed . 5)))
+
   (dashboard-setup-startup-hook))
 
 #+END_SRC
+* Sync agendas
+
+Synchronize Calendar on boot
+#+begin_src emacs-lisp
+(defun my-sync-orgs ()
+  "Synchronize ORG stuff periodically"
+  (interactive)
+  (if my-sync-gcal
+      (progn (message "Synchronizing calendar")
+             (org-gcal-sync t t))))
+
+(add-hook 'after-init-hook 'my-sync-orgs)
+(run-with-timer 0 (* 30 60) 'my-sync-orgs)
+#+end_src
+
+* Browser / EAF
+#+begin_src emacs-lisp
+(use-package epc)
+(straight-use-package '(eaf :type git
+                            :host github
+                            :repo "manateelazycat/emacs-application-framework"
+                            :files ("*.el" "*.py" "core" "app")))
+#+end_src
 * Terminal (vterm)
 - Synchronize default-directory with the added vterm-eval-cmds
 - When scrolling up the buffer with ctrl-up, enable vterm-copy-mode
@@ -1157,7 +1411,7 @@ Various global bindings
 
 Read AWS logs from emacs.
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
 (use-package aws-saw
   :straight (:host github :repo "ration/aws-saw.el"))
 #+end_src
@@ -1168,6 +1422,92 @@ My own task organizer stuff
 (use-package chore
   :straight (:host github :repo "ration/chore.el")
   :config (key-chord-define-global "§§" 'chore-switch-to-note))
+#+end_src
+* email
+#+begin_src emacs-lisp
+(require 'mu4e)
+;; use mu4e for e-mail in emacs
+(setq mail-user-agent 'mu4e-user-agent)
+(setq mu4e-mu-binary "/usr/local/bin/mu")
+(setq mu4e-confirm-quit nil)
+(define-key mu4e-headers-mode-map (kbd "x") (lambda() (interactive) (mu4e-mark-execute-all t)))
+
+;; Update email index every 5 minutes
+(run-with-timer 0 (* 5 60) 'mu4e-update-index)
+
+(setq   mu4e-maildir-shortcuts
+    '( (:maildir "/Work/INBOX"   :key ?i)))
+
+
+  ;; set headers
+  (setq mu4e-headers-fields
+        '( (:date          .  25)    ;; alternatively, use :human-date
+           (:flags         .   6)
+           (:from          .  22)
+           (:thread-subject .  nil))) ;; alternatively, use :thread-subject
+
+ (setq mu4e-contexts
+    `( ,(make-mu4e-context
+	  :name "Iki"
+	  :enter-func (lambda () (mu4e-message "Entering Iki context"))
+          :leave-func (lambda () (mu4e-message "Leaving Iki context"))
+	  ;; we match based on the contact-fields of the message
+	  :match-func (lambda (msg)
+			(when msg
+			  (string-match-p "^/iki" (mu4e-message-field msg :maildir))))
+	  :vars '( ( user-mail-address	    . "lahtela@iki.fi"  )
+                   ( mu4e-refile-folder . "/iki/Archive")
+		   ( user-full-name	    . "Tatu Lahtela" )))
+       ,(make-mu4e-context
+	  :name "Work"
+	  :enter-func (lambda () (mu4e-message "Switch to the Work context"))
+	  ;; no leave-func
+	  ;; we match based on the maildir of the message
+	  ;; this matches maildir /Work and its sub-directories
+	  :match-func (lambda (msg)
+			(when msg
+			  (string-match-p "^/Work" (mu4e-message-field msg :maildir))))
+	  :vars `( ( user-mail-address	     . ,my-work-email-address )
+		   ( user-full-name	     . "Tatu Lahtela" )
+                   ( mu4e-refile-folder . "/Work/Archive")
+		   ( mu4e-compose-signature  . ,my-work-email-signature)))))
+  ;; set mail folders
+  (setq  mu4e-maildir       "~/Mail/"   ;; top-level Maildir
+;;         mu4e-sent-folder   "/Sent"       ;; folder for sent messages
+;;         mu4e-refile-folder "/Archive"
+;;         mu4e-drafts-folder "/Drafts"     ;; unfinished messages
+;;         mu4e-trash-folder  "/Trash"      ;; trashed messages
+;;         user-mail-address "lahtela@iki.fi"
+         )
+
+(add-to-list 'mu4e-bookmarks
+  '(:name "IKI Inbox"
+      :query "maildir:/iki/INBOX"
+      :key ?i))
+
+(setq mu4e-get-mail-command "true") ;; "offlineimap" <- in cronb
+
+(require 'smtpmail)
+(setq message-send-mail-function 'smtpmail-send-it
+   starttls-use-gnutls t
+   smtpmail-auth-credentials "~/.authinfo.gpg"
+   smtpmail-default-smtp-server "mail.kapsi.fi"
+   smtpmail-smtp-user "talahtel"
+   smtpmail-smtp-server "mail.kapsi.fi"
+   smtpmail-smtp-service 587)
+(global-set-key (kbd "C-c m") 'mu4e)
+#+end_src
+Alert from emails [[https://github.com/iqbalansari/mu4e-alert]]
+#+begin_src emacs-lisp
+(use-package mu4e-alert
+:config
+(setq mu4e-alert-interesting-mail-query
+      (concat
+       "flag:unread"
+       " AND NOT flag:trashed"
+       " AND (maildir:/Work/INBOX OR maildir:/iki/INBOX)"))
+(add-hook 'after-init-hook #'mu4e-alert-enable-mode-line-display)
+)
 #+end_src
 * Spell checking wcheck-mode
 
@@ -1191,6 +1531,28 @@ done < "${2:-/dev/stdin}"
 #+end_src
 
 #+begin_src emacs-lisp
+(defun enchant-suggestions-menu (marked-text)
+  (cons (cons "[Add to dictionary]" 'enchant-add-to-dictionary)
+        (wcheck-parser-ispell-suggestions)))
+
+(defvar enchant-dictionaries-dir "~/.config/enchant")
+
+(defun enchant-add-to-dictionary (marked-text)
+  (let* ((word (aref marked-text 0))
+         (language (aref marked-text 4))
+         (file (let ((code (nth 1 (member "-d" (wcheck-query-language-data
+                                                language 'action-args)))))
+                 (when (stringp code)
+                   (concat (file-name-as-directory enchant-dictionaries-dir)
+                           code ".dic")))))
+
+    (when (and file (file-writable-p file))
+      (with-temp-buffer
+        (insert word) (newline)
+        (append-to-file (point-min) (point-max) file)
+        (message "Added word \"%s\" to the %s dictionary"
+                 word language)))))
+
 (use-package wcheck-mode
   :commands (wcheck-mode)
   :init
@@ -1201,19 +1563,20 @@ done < "${2:-/dev/stdin}"
   (setq wcheck-language-data
     '
     (
-      ("American English"
+      ("English"
         (program . "/usr/bin/enchant-2")
         (args "-l" "-d" "en_US")
         (action-program . "/usr/bin/enchant-2")
         (action-args "-a" "-d" "en_US")
         (action-parser . enchant-suggestions-menu)
-        (read-or-skip-faces
-          ;; Only check comments & strings.
-          ((emacs-lisp-mode c-mode)
-            read font-lock-comment-face
-            read font-lock-string-face
-            )
-          (nil))
+;;        (read-or-skip-faces
+;;          ;; Only check comments & strings.
+;;          ((emacs-lisp-mode c-mode)
+;;            read font-lock-comment-face
+;;            read font-lock-string-face
+;;            )
+;;          (nil))
+;;
         )
       ("Finnish"
         (program . "/usr/bin/enchant-2")
