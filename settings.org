@@ -69,11 +69,18 @@ Change title to show buffer path
 (setq-default frame-title-format '("%f [%m] - emacs]"))
 #+end_src
 * File formatting stuff
+
+Globally enable show trailing whitespace and increase fill-column (wrapping)
+
 #+BEGIN_SRC emacs-lisp
 (setq-default show-trailing-whitespace t)
 (setq-default fill-column 120)
 #+END_SRC
+
 ** Editorconfig
+
+[[https://editorconfig.org/][EditorConfig]] settings.
+
 #+BEGIN_SRC emacs-lisp
 (use-package editorconfig
   :config
@@ -455,60 +462,56 @@ Unbind colliding mappings
 (define-key org-mode-map (kbd "M-<right>") nil)
 (define-key org-mode-map (kbd "ESC <left>") 'org-metaleft)
 
-
-;; (define-key org-agenda-mode-map (kbd "M-<down>") nil)
-;; (define-key org-agenda-mode-map (kbd "M-<up>") nil)
-;; (define-key org-agenda-mode-map (kbd "M-<left>") nil)
-;; (define-key org-agenda-mode-map (kbd "M-<right>") nil)
-;;
-;; (define-key org-agenda-keymap (kbd "M-<down>") nil)
-;; (define-key org-agenda-keymap (kbd "M-<up>") nil)
-;; (define-key org-agenda-keymap (kbd "M-<left>") nil)
-;; (define-key org-agenda-keymap (kbd "M-<right>") nil)
-
-(unless (boundp 'org-clocking-buffer)
-  (defalias 'org-clocking-buffer #'org-clock-is-active))
-
-(org-babel-do-load-languages
- 'org-babel-load-languages
- '((python . t)))
+(add-hook 'org-mode-hook 'auto-revert-mode)
 #+end_src
-Journal, Rifle
+** Don't trail whitespace in org mode
+#+begin_src emacs-lisp
+ (add-hook 'org-mode-hook (lambda () (setq show-trailing-whitespace nil)))
+#+end_src
 
-Org-journal doesn't seem to work with straight.
+** Clock
+#+begin_src emacs-lisp
+ (unless (boundp 'org-clocking-buffer)
+   (defalias 'org-clocking-buffer #'org-clock-is-active))
 
-#+BEGIN_SRC emacs-lisp
-(require 'find-lisp)
-(setq calendar-week-start-day 1)
-(use-package org-journal
-  :init
-  (setq org-journal-dir "~/Org/Journal")
-  (setq org-journal-file-type 'weekly)
-  (setq org-journal-file-format "%Y-%m-%d.org")
-  (setq org-journal-date-format "%y-%m-%d, %A"))
-#+END_SRC
+ (org-babel-do-load-languages
+  'org-babel-load-languages
+  '((python . t)))
+#+end_src
+ Journal, Rifle
 
-ox-gfm allows exporting Github Flavored markdown
-#+BEGIN_SRC emacs-lisp
-(use-package ox-gfm)
-(require 'find-lisp)
-(setq org-agenda-directory "~/Org/")
-(setq org-agenda-files
-      (find-lisp-find-files org-agenda-directory "\.org$"))
-(setq-default org-catch-invisible-edits 'smart)
-(setq org-default-notes-file "~/Org/notes.org")
-(setq org-refile-targets '((org-agenda-files . (:maxlevel . 6))))
+ #+BEGIN_SRC emacs-lisp
+ (require 'find-lisp)
+ (setq calendar-week-start-day 1)
+ (use-package org-journal
+   :init
+   (setq org-journal-dir "~/Org/Journal")
+   (setq org-journal-file-type 'weekly)
+   (setq org-journal-file-format "%Y-%m-%d.org")
+   (setq org-journal-date-format "%y-%m-%d, %A"))
+ #+END_SRC
 
-(add-hook 'auto-save-hook 'org-save-all-org-buffers)
-(add-hook 'org-mode-hook 'flyspell-mode)
+ ox-gfm allows exporting Github Flavored markdown
+ #+BEGIN_SRC emacs-lisp
+ (use-package ox-gfm)
+ (require 'find-lisp)
+ (setq org-agenda-directory "~/Org/")
+ (setq org-agenda-files
+       (find-lisp-find-files org-agenda-directory "\.org$"))
+ (setq-default org-catch-invisible-edits 'smart)
+ (setq org-default-notes-file "~/Org/notes.org")
+ (setq org-refile-targets '((org-agenda-files . (:maxlevel . 6))))
 
-(add-hook 'org-agenda-mode-hook (lambda () (setq show-trailing-whitespace nil)))
-;; (add-hook 'org-mode-hook
-;;          (lambda () (add-hook 'before-save-hook 'cleanup-buffer nil 'local)))
+ (add-hook 'auto-save-hook 'org-save-all-org-buffers)
+ (add-hook 'org-mode-hook 'flyspell-mode)
+
+ (add-hook 'org-agenda-mode-hook (lambda () (setq show-trailing-whitespace nil)))
+ ;; (add-hook 'org-mode-hook
+ ;;          (lambda () (add-hook 'before-save-hook 'cleanup-buffer nil 'local)))
 
 
-(use-package org-super-agenda)
-#+END_SRC
+ (use-package org-super-agenda)
+ #+END_SRC
 ** Plantuml
 #+BEGIN_SRC emacs-lisp
   (defun my-org-confirm-babel-evaluate (lang body)
@@ -1091,10 +1094,11 @@ Filter feed to current topic
   (interactive)
   (let* ((entry (elfeed-search-selected :single))
          (feed (elfeed-entry-feed entry))
-         (feed-title (elfeed-feed-title feed)))
+         (feed-url (elfeed-protocol-subfeed-url (elfeed-feed-url feed))))
     (with-current-buffer (elfeed-search-buffer)
-      (setf elfeed-search-filter (format "%s %s" elfeed-search-filter feed-title))
+      (setf elfeed-search-filter (format "%s =%s" elfeed-search-filter feed-url))
     (elfeed-search-update :force))))
+(define-key elfeed-search-mode-map "f" 'my-elfeed-filter-current-feed)
 #+end_src
 
 * UUID
