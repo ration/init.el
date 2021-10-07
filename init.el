@@ -25,6 +25,8 @@
 
 (straight-use-package 'use-package)
 (straight-use-package 'el-patch)
+(straight-use-package 'org)
+
 (setq straight-use-package-by-default t)
 
 (message (format "%s" load-path))

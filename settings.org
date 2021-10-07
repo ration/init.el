@@ -77,7 +77,7 @@ Globally enable show trailing whitespace and increase fill-column (wrapping)
 (setq-default fill-column 120)
 #+END_SRC
 
-** Editorconfig
+** EditorConfig
 
 [[https://editorconfig.org/][EditorConfig]] settings.
 
@@ -439,10 +439,11 @@ Some usage through chords (see chords)
   :init
   (global-set-key (kbd "C-c g") (lambda () (interactive)
 			    (fzf/start "~"))))
-(defun my-helm-run-fzf (candidate)
+
+(defun my-helm-run-fzf (candidate &optional cmd-stream)
   (interactive)
   (let ((helm-current-dir (file-name-directory (helm-get-selection))))
-      (fzf/start helm-current-dir)))
+      (fzf/start helm-current-dir cmd-stream)))
 
 (defun my-helm-ff-switch-to-fzf ()
   "Stop helm find-files and use fzf"
@@ -450,6 +451,11 @@ Some usage through chords (see chords)
   (with-helm-alive-p
     (helm-exit-and-execute-action 'my-helm-run-fzf)))
 
+(defun my-helm-ff-switch-to-fzf-dir ()
+  "Stop helm find-files and use fzf (directories)"
+  (interactive)
+  (with-helm-alive-p
+    (helm-get-default-action (lambda (x) (my-helm-run-fzf x "fdfind --type d")))))
 
 #+END_SRC
 * Org Mode
@@ -470,7 +476,10 @@ Unbind colliding mappings
 #+end_src
 
 ** Clock
-#+begin_src emacs-lisp
+
+(Disabled)   
+   
+#+begin_src emacs-lisp :tangle no
  (unless (boundp 'org-clocking-buffer)
    (defalias 'org-clocking-buffer #'org-clock-is-active))
 
@@ -478,7 +487,8 @@ Unbind colliding mappings
   'org-babel-load-languages
   '((python . t)))
 #+end_src
- Journal, Rifle
+
+** Journal, Rifle
 
  #+BEGIN_SRC emacs-lisp
  (require 'find-lisp)
@@ -490,29 +500,49 @@ Unbind colliding mappings
    (setq org-journal-file-format "%Y-%m-%d.org")
    (setq org-journal-date-format "%y-%m-%d, %A"))
  #+END_SRC
-
- ox-gfm allows exporting Github Flavored markdown
+ 
+** ox-gfm allows exporting Github Flavored markdown
  #+BEGIN_SRC emacs-lisp
  (use-package ox-gfm)
+ #+END_SRC
+
+** Generic Org settings 
+
+All Org files are in /~Org/, add safeguards for disallowing editing folded trees,
+refile tweaks. Auto-save all org buffers. 
+
+Ignore some files, such as the capture template.
+
+ #+BEGIN_SRC emacs-lisp
  (require 'find-lisp)
  (setq org-agenda-directory "~/Org/")
  (setq org-agenda-files
-       (find-lisp-find-files org-agenda-directory "\.org$"))
+       (remove (expand-file-name "~/Org/capture.org")
+       (find-lisp-find-files org-agenda-directory "\.org$")))
+
+
  (setq-default org-catch-invisible-edits 'smart)
  (setq org-default-notes-file "~/Org/notes.org")
- (setq org-refile-targets '((org-agenda-files . (:maxlevel . 6))))
+ (setq org-refile-targets '((org-agenda-files . (:maxlevel . 10))))
+
+ (setq org-refile-use-outline-path 'file)
+ (setq org-outline-path-complete-in-steps nil)
+ (setq org-refile-allow-creating-parent-nodes 'confirm)
 
  (add-hook 'auto-save-hook 'org-save-all-org-buffers)
  (add-hook 'org-mode-hook 'flyspell-mode)
 
  (add-hook 'org-agenda-mode-hook (lambda () (setq show-trailing-whitespace nil)))
- ;; (add-hook 'org-mode-hook
- ;;          (lambda () (add-hook 'before-save-hook 'cleanup-buffer nil 'local)))
 
-
- (use-package org-super-agenda)
+ (use-package org-super-agenda
+   :config
+   (setq org-super-agenda-groups
+     '((:auto-tags t)))
+   (org-super-agenda-mode t))
  #+END_SRC
+
 ** Plantuml
+
 #+BEGIN_SRC emacs-lisp
   (defun my-org-confirm-babel-evaluate (lang body)
     (not (string= lang "plantuml")))  ; don't ask for ditaa
@@ -583,8 +613,9 @@ Unbind colliding mappings
         ("DONE"   . "Completed")))
         (setq org-clubhouse-workflow-name "Development"))
 #+END_SRC
-** Emphasis
+** Emphasis ant other styles
 #+BEGIN_SRC emacs-lisp
+(setq org-ellipsis "⤵")
 (setq org-emphasis-alist '(
 			  ("/"  (:foreground "red" :background: "yellow"))
 			  ("\""  (:foreground "red" :background: "yellow"))
@@ -600,27 +631,50 @@ Unbind colliding mappings
 #+BEGIN_SRC emacs-lisp :tangle no
 (use-package org-analyzer)
 #+END_SRC
+** TODO Org attach screenshot
+
+[[https://github.com/dfeich/org-screenshot][org-screenshot]] Do this to the end.
+
+#+begin_src emacs-lisp
+(use-package org-attach-screenshot
+  :config 
+  (define-key org-mode-map (kbd "C-c s") 'org-attach-screenshot)
+  (setq org-attach-screenshot-dirfunction
+	(lambda () "~/Org/Screenshots")		  
+	org-attach-screenshot-command-line "spectacle -o %f -r -b -n"))
+#+end_src
 
 ** Capture templates
 #+BEGIN_SRC emacs-lisp
-(setq org-capture-templates (append
-                             (quote
-                              (("b" "Bloggging" entry
-                                (file (lambda () "~/Org/blog.org"))
-                                "")
-                               ("n" "Note" entry
-                                (file (lambda () "~/Org/notes.org"))
-                                "* %?")
-                               ("t" "Generic TODO" entry
-                                (file+headline "~/Org/todo.org" "Inbox")
-                                "* TODO %?")
-                               ("l" "Org Capture Text" entry (file+headline "~/Org/todo.org" "Protocol")
-                               "* TODO %?\n%u\n#+begin_example\n%i\n#+end_example\n\nSource: %:link\n"
-                               :empty-lines 1)
-                               ("L" "Org Capture" entry (file+headline "~/Org/todo.org" "Protocol")
-                               "* TODO %?\n%u\nSource: %:link\n"
-                               :empty-lines 1)
-                               )) (if (boundp 'project-specific-templates) project-specific-templates)))
+(use-package capture-org-template
+  :straight (:host github :repo "ration/capture-org-template.el")
+
+  :config 
+  (setq org-capture-templates (capture-org-template "~/Org/capture.org")))
+
+;; (setq org-capture-templates (append
+;;                              (quote
+;;                               (
+;;                                ("P" "TODO Email" entry 
+;;                                 (file+headline "~/Org/todo.org" "Inbox")
+;;                                 "* TODO %:fromname: %a %?\nDEADLINE: %(org-insert-time-stamp (org-read-date nil t \"+2d\"))")
+;;                                ("b" "Bloggging" entry
+;;                                 (file (lambda () "~/Org/blog.org"))
+;;                                 "")
+;;                                ("n" "Note" entry
+;;                                 (file (lambda () "~/Org/notes.org"))
+;;                                 "* %?")
+;;                                ("t" "Generic TODO" entry
+;;                                 (file+headline "~/Org/todo.org" "Inbox")
+;;                                 "* TODO %?")
+;;                                ("l" "Org Capture Text" entry (file+headline "~/Org/todo.org" "Protocol")
+;;                                "* TODO %?\n%u\n#+begin_example\n%i\n#+end_example\n\nSource: %:link\n"
+;;                                :empty-lines 1)
+;;                                ("L" "Org Capture" entry (file+headline "~/Org/todo.org" "Protocol")
+;;                                "* TODO %?\n%u\nSource: %:link\n"
+;;                                :empty-lines 1)
+;;                                )) (if (boundp 'project-specific-templates) project-specific-templates)))
+
 #+END_SRC
 ** Reload images when running babel
 #+BEGIN_SRC emacs-lisp
@@ -641,7 +695,10 @@ If org-cal keys has been set install org-gcal and add a sync for it in agenda
 #+begin_src emacs-lisp
 (if (boundp 'org-gcal-client-id)
     (use-package org-gcal
-      :config (define-key org-agenda-mode-map (kbd "ö") 'org-gcal-fetch)))
+      :config 
+      (setq org-gcal-notify-p nil)
+      (setq org-gcal-remove-api-cancelled-events t)
+      (define-key org-agenda-mode-map (kbd "ö") 'org-gcal-fetch)))
 #+end_src
 ** Todoist
 #+begin_src emacs-lisp
@@ -1140,6 +1197,7 @@ Filter feed to current topic
          ("C-x C-f" . helm-find-files)
          :map helm-find-files-map
          ("C-," . my-helm-ff-switch-to-fzf)
+         ("C-." . my-helm-ff-switch-to-fzf-dir)
          ("<C-backspace>" . helm-find-files-up-one-level)
          :map helm-read-file-map
          ("<C-backspace>" . helm-find-files-up-one-level)
@@ -1310,7 +1368,9 @@ Synchronize Calendar on boot
         :bind (:map vterm-mode-map
                     (( "C-." . find-trace-paths)
                      ( "C-<up>" . my-vterm-backward-paragraph)))
+        :custom (vterm-kill-buffer-on-exit t)
         :config
+        (global-set-key (kbd "C-c t") 'vterm)
         (setq vterm-max-scrollback 10000)
         (require 'vterm)
         (add-to-list 'vterm-eval-cmds '("update-pwd" (lambda (path) (setq default-directory path))))
@@ -1380,7 +1440,7 @@ Various global bindings
 (global-set-key (kbd "M-k") 'kill-line-without-copy)
 
 (global-set-key (kbd "C-§") 'whitespace-mode)
-(global-set-key (kbd "s-§") (lambda () (interactive) (switch-to-buffer current-notes-file)))
+(global-set-key (kbd "s-§") (lambda () (interactive) (find-file current-notes-file)))
 (global-set-key (kbd "M-<up>") 'windmove-up)
 (global-set-key (kbd "M-<down>") 'windmove-down)
 (global-set-key (kbd "M-<left>") 'windmove-left)
@@ -1599,6 +1659,20 @@ done < "${2:-/dev/stdin}"
     ))
   (setq wcheck-language "Finglish")
   )
+#+end_src
+* Spotify
+
+Use smudge. Assumes keys defined in local.el
+#+begin_example
+(setq smudge-oauth2-client-secret nil)
+(setq smudge-oauth2-client-id nil)
+#+end_example
+
+#+begin_src emacs-lisp
+(use-package smudge
+  :straight (:host github :repo "danielfm/smudge"))
+
+
 #+end_src
 * Exit Hook
 Just save everything if we get TERM
