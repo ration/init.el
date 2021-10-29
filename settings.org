@@ -1,3 +1,4 @@
+#+STARTUP: overview
 * Initialization file for emacs
 
 Utilizes straight.el for most of the initalization stuff.
@@ -64,6 +65,7 @@ Utilizes straight.el for most of the initalization stuff.
 ;;  :config
 ;;  (load-theme 'idea-darkula))
 #+END_SRC
+
 Change title to show buffer path
 #+begin_src emacs-lisp
 (setq-default frame-title-format '("%f [%m] - emacs]"))
@@ -128,19 +130,30 @@ Globally enable show trailing whitespace and increase fill-column (wrapping)
 (setq compilation-ask-about-save nil)
 #+END_SRC
 * Buffer manipulation
-** Smartparens
-Feels like it gets is more in the way. The ctrl up down in context feels
-like a nice idea but it might need something like a hydra to be really useful.
-#+BEGIN_SRC emacs-lisp :tangle no
-(use-package smartparens
-  :config
-  (add-hook 'prog-mode-hook 'smartparens-mode)
-  :init
-  (bind-key "<C-down>" #'sp-forward-sexp smartparens-mode-map)
-  (bind-key "<C-up>" #'sp-backward-sexp smartparens-mode-map)
-  (global-unset-key "\C-o")
-  (bind-key "\C-o" #'sp-select-next-thing smartparens-mode-map))
-#+END_SRC
+** Surrounding stuff
+*** Wrap region
+    More simple than smartparens and does what I usually want. Just mark the region manually and wrap.
+   #+begin_src emacs-lisp
+   (use-package wrap-region
+     :init
+     (add-hook 'org-mode-hook 'wrap-region-mode)
+     :config
+     (wrap-region-add-wrapper "/" "/")
+     (wrap-region-add-wrapper "=" "="))
+   #+end_src
+*** Smartparens
+ Feels like it gets is more in the way. The ctrl up down in context feels
+ like a nice idea but it might need something like a hydra to be really useful.
+ #+BEGIN_SRC emacs-lisp :tangle no
+ (use-package smartparens
+   :config
+   (add-hook 'prog-mode-hook 'smartparens-mode)
+   :init
+   (bind-key "<C-down>" #'sp-forward-sexp smartparens-mode-map)
+   (bind-key "<C-up>" #'sp-backward-sexp smartparens-mode-map)
+   (global-unset-key "\C-o")
+   (bind-key "\C-o" #'sp-select-next-thing smartparens-mode-map))
+ #+END_SRC
 ** Flash modeline
 #+BEGIN_SRC emacs-lisp
 (defun double-flash-mode-line ()
@@ -460,6 +473,8 @@ Some usage through chords (see chords)
 #+END_SRC
 * Org Mode
 
+
+  
 Unbind colliding mappings
 #+begin_src emacs-lisp
 (define-key org-mode-map (kbd "M-<down>") nil)
@@ -470,6 +485,17 @@ Unbind colliding mappings
 
 (add-hook 'org-mode-hook 'auto-revert-mode)
 #+end_src
+** Org-appear
+   
+   Hide emphasis markers unless under cursor
+   #+begin_src emacs-lisp
+   (use-package org-appear
+     :straight (:host github :repo "awth13/org-appear")
+     :init
+     (setq org-hide-emphasis-markers t)
+     :config
+     (add-hook 'org-mode-hook 'org-appear-mode))
+   #+end_src
 ** Don't trail whitespace in org mode
 #+begin_src emacs-lisp
  (add-hook 'org-mode-hook (lambda () (setq show-trailing-whitespace nil)))
@@ -515,7 +541,10 @@ Ignore some files, such as the capture template.
 
  #+BEGIN_SRC emacs-lisp
  (require 'find-lisp)
+ (setq org-agenda-dim-blocked-tasks t)
+ (setq org-enforce-todo-dependencies t)
  (setq org-agenda-directory "~/Org/")
+ (setq org-directory "~/Org/")
  (setq org-agenda-files
        (remove (expand-file-name "~/Org/capture.org")
        (find-lisp-find-files org-agenda-directory "\.org$")))
@@ -537,7 +566,10 @@ Ignore some files, such as the capture template.
  (use-package org-super-agenda
    :config
    (setq org-super-agenda-groups
-     '((:auto-tags t)))
+     '((:name "Overdue" :scheduled past)
+       (:name "Today" 
+           :time-grid t)
+           (:auto-tags t)))
    (org-super-agenda-mode t))
  #+END_SRC
 
@@ -696,6 +728,7 @@ If org-cal keys has been set install org-gcal and add a sync for it in agenda
 (if (boundp 'org-gcal-client-id)
     (use-package org-gcal
       :config 
+      (setq org-gcal-auto-archive t)
       (setq org-gcal-notify-p nil)
       (setq org-gcal-remove-api-cancelled-events t)
       (define-key org-agenda-mode-map (kbd "ö") 'org-gcal-fetch)))
@@ -1163,8 +1196,8 @@ Filter feed to current topic
 (use-package uuid)
 #+end_src
 
-* Helm, Swoop and related
-#+BEGIN_SRC emacs-lisp
+* Completion frameworks, Helm, Swoop and related
+#+BEGIN_SRC emacs-lisp 
 (defun helm-execute-if-single-persistent-action (&optional attr split-onewindow)
   "Execute persistent action if the candidate list is less than 2 OR if theres no input and only one non trivial thing to select from"
   (interactive)
@@ -1221,6 +1254,9 @@ Filter feed to current topic
 (helm-mode 1)
 (global-set-key (kbd "M-s M-s") 'isearch-forward)
 (use-package helm-projectile)
+(use-package helm-org
+  :init
+  (add-to-list 'helm-completing-read-handlers-alist '(org-set-tags-command . helm-org-completing-read-tags)))
 #+END_SRC
 * (Ma) Git
 Add diffall to command list
@@ -1239,6 +1275,8 @@ Add diffall to command list
   (transient-bind-q-to-quit)
   (transient-insert-suffix 'magit-diff "d" '("a" "Diffall" magit-diffall)))
 
+(use-package magit-delta
+  :hook (magit-mode . magit-delta-mode))
 
 
 (use-package forge)
@@ -1337,6 +1375,16 @@ Synchronize Calendar on boot
 #+end_src
 
 * Browser / EAF
+Default browser per domains
+#+begin_src emacs-lisp
+(setq
+ browse-url-browser-function
+ '(
+  ("drive\\.google" . browse-url-chrome)
+  ("." . browse-url-default-browser)
+  ))
+#+end_src
+
 #+begin_src emacs-lisp
 (use-package epc)
 (straight-use-package '(eaf :type git
@@ -1363,13 +1411,21 @@ Synchronize Calendar on boot
   (add-to-list 'shackle-rules
                '("\\`\\*helm.*?\\*\\'" :regexp t :align t :size 0.9))
 
+(defun my-clone-buffer () 
+  "Clone current buffer"
+  (interactive)
+  (let ((current-buffer (format "%s *copy*" (buffer-name))))
+        (get-buffer-create current-buffer)
+        (copy-to-buffer current-buffer (point-min) (point-max))))
+
+
 (if module-file-suffix
       (use-package vterm
         :bind (:map vterm-mode-map
                     (( "C-." . find-trace-paths)
                      ( "C-<up>" . my-vterm-backward-paragraph)))
         :custom (vterm-kill-buffer-on-exit t)
-        :config
+        :init
         (global-set-key (kbd "C-c t") 'vterm)
         (setq vterm-max-scrollback 10000)
         (require 'vterm)
@@ -1464,7 +1520,6 @@ Various global bindings
 (use-package key-chord
   :config
   (key-chord-define-global ",," 'avy-goto-char-timer)
-  (key-chord-define-global "gg" 'helm-projectile)
   (key-chord-define-global "xx" 'helm-M-x)
   (key-chord-define-global "vv" 'goto-line)
   (key-chord-define-global "bb" 'purpose-switch-buffer-overload)
@@ -1494,6 +1549,8 @@ My own task organizer stuff
 (setq mail-user-agent 'mu4e-user-agent)
 (setq mu4e-mu-binary "/usr/local/bin/mu")
 (setq mu4e-confirm-quit nil)
+(setq mu4e-html2text-command "html2text -utf8 -width 72")
+(setq mu4e-view-prefer-html t)
 (define-key mu4e-headers-mode-map (kbd "x") (lambda() (interactive) (mu4e-mark-execute-all t)))
 
 ;; Update email index every 5 minutes
@@ -1675,8 +1732,8 @@ Use smudge. Assumes keys defined in local.el
 
 #+end_src
 * Exit Hook
-Just save everything if we get TERM
 
+Just save everything if we get TERM
 
 #+begin_src emacs-lisp
 (setq confirm-kill-processes nil)
