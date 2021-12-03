@@ -270,6 +270,13 @@ Also make right or left arrow keys abort the completion.
   (interactive "p")
   (delete-region (point) (progn (forward-word (- arg)) (point))))
 #+END_SRC
+** Copy path to buffer
+   #+begin_src emacs-lisp
+   (defun my-dired-copy-dirname-as-kill ()
+     "Copy the current directory into the kill ring."
+     (interactive)
+     (kill-new default-directory))
+   #+end_src
 ** Avy / ace
 #+begin_src emacs-lisp
 (use-package avy
