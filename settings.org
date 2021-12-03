@@ -13,6 +13,7 @@ Utilizes straight.el for most of the initalization stuff.
 (setq my-work-email-signature (concat
 		       "Tatu Lahtela\n"
 		       "lahtela@iki.fi"))
+(setq my-mu-work-dir "Work")
 
 (let ((local (expand-file-name "local.el" user-emacs-directory)))
   (message "Loading local settings %s" local)
