@@ -13,6 +13,7 @@ Utilizes straight.el for most of the initalization stuff.
 (setq my-work-email-signature (concat
 		       "Tatu Lahtela\n"
 		       "lahtela@iki.fi"))
+(setq enable-mu4e t)
 (setq my-mu-work-dir "Work")
 
 (let ((local (expand-file-name "local.el" user-emacs-directory)))
@@ -27,9 +28,20 @@ Utilizes straight.el for most of the initalization stuff.
 
 #+END_SRC
 
+* EShell
+#+begin_src emacs-lisp :tangle no
+(use-package eshell
+  ;; Eshell still doesn't like bindings?
+  :bind (:map eshell-mode-map ("C-r" . helm-eshell-history)))
+
+(use-package eshell-git-prompt
+  :config
+  (eshell-git-prompt-use-theme 'powerline))
+#+end_src
 * Don't pop up the Warnings buffer on uninteresting stuff
 #+begin_src emacs-lisp
 (setq warning-minimum-level :error)
+(setq visible-bell t)
 #+end_src
 * Create backups in separate directory and disable lock files
 #+BEGIN_SRC emacs-lisp
@@ -41,6 +53,7 @@ Utilizes straight.el for most of the initalization stuff.
   (require 'recentf)
 (add-to-list 'recentf-exclude no-littering-var-directory)
 (add-to-list 'recentf-exclude no-littering-etc-directory))
+(require 'no-littering)
 #+END_SRC
 * UI Look and feel. Note some of this is in early-init.el
 ** For nostalgia my old theme
@@ -58,19 +71,36 @@ Utilizes straight.el for most of the initalization stuff.
     ))
 
 #+END_SRC
-** Theme
-#+BEGIN_SRC emacs-lisp
-(use-package atom-dark-theme
-  :config (load-theme 'atom-dark))
-;;(use-package idea-darkula-theme
-;;  :config
-;;  (load-theme 'idea-darkula))
+** Theme, font, emoji
+#+BEGIN_SRC emacs-lisp 
+  (use-package atom-dark-theme
+    :config (load-theme 'atom-dark))
+  ;;(use-package idea-darkula-theme
+  ;;  :config
+  ;;  (load-theme 'idea-darkula))
+
+#+end_src
+
+#+begin_src emacs-lisp :tangle no
+(use-package melancholy-theme
+  :config (load-theme 'melancholy t))
+  
+#+end_src
+#+begin_src emacs-lisp
+  (use-package emojify
+    :hook (after-init . global-emojify-mode))
 #+END_SRC
 
 Change title to show buffer path
 #+begin_src emacs-lisp
 (setq-default frame-title-format '("%f [%m] - emacs]"))
 #+end_src
+** vline for column visibility
+#+begin_src emacs-lisp
+(use-package vline-mode
+     :straight (:host github :repo "EricCrosson/vline-mode"))
+#+end_src
+
 * File formatting stuff
 
 Globally enable show trailing whitespace and increase fill-column (wrapping)
@@ -126,21 +156,32 @@ Globally enable show trailing whitespace and increase fill-column (wrapping)
 #+BEGIN_SRC emacs-lisp
 (use-package google-this)
 #+END_SRC
-* Compile without save
+* Compile buffer stuff,  without save
 #+BEGIN_SRC emacs-lisp
 (setq compilation-ask-about-save nil)
 #+END_SRC
+Ansi colors
+#+begin_src emacs-lisp
+(require 'ansi-color)
+(defun endless/colorize-compilation ()
+  "Colorize from `compilation-filter-start' to `point'."
+  (let ((inhibit-read-only t))
+    (ansi-color-apply-on-region
+     compilation-filter-start (point))))
+
+(add-hook 'compilation-filter-hook
+          #'endless/colorize-compilation)
+#+end_src
 * Buffer manipulation
 ** Surrounding stuff
 *** Wrap region
     More simple than smartparens and does what I usually want. Just mark the region manually and wrap.
    #+begin_src emacs-lisp
    (use-package wrap-region
-     :init
-     (add-hook 'org-mode-hook 'wrap-region-mode)
      :config
-     (wrap-region-add-wrapper "/" "/")
-     (wrap-region-add-wrapper "=" "="))
+     (add-hook 'org-mode-hook 'wrap-region-mode)
+     (wrap-region-add-wrapper "/" "/" nil 'org-mode)
+     (wrap-region-add-wrapper "=" "=" nil 'org-mode))
    #+end_src
 *** Smartparens
  Feels like it gets is more in the way. The ctrl up down in context feels
@@ -280,7 +321,13 @@ Also make right or left arrow keys abort the completion.
 ** Avy / ace
 #+begin_src emacs-lisp
 (use-package avy
-  :bind ("C-å" . avy-goto-char-timer))
+  :bind ("C-å" . avy-goto-char-timer)
+  ("M-å" . avy-goto-line))
+
+(defun my-avy-goto-line ()
+  (interactive)
+  (progn (avy-goto-line)
+         (move-end-of-line nil)))
 
 (use-package ace-jump-mode)
 #+end_src
@@ -372,13 +419,13 @@ Some usage through chords (see chords)
   :config
   (setq mc/always-run-for-all t)
   :bind ("C-<" . mc/mark-next-like-this)
-        ("C--" . mc/edit-lines))
+        ("C-c p" . mc/edit-lines))
 
 #+end_src
 ** rename-file-and-buffer
 #+begin_src emacs-lisp
 (defun rename-file-and-buffer (new-name)
-  "Renames both current buffer and file it's visiting to NEW-NAME."
+  "Renames both current buffer and file it's iting to NEW-NAME."
   (interactive "sNew name: ")
   (let ((name (buffer-name))
         (filename (buffer-file-name)))
@@ -402,6 +449,21 @@ Some usage through chords (see chords)
 (use-package smart-mode-line
   :config (setq sml/theme 'respectful))
 #+end_src
+** Manipulating multiple lines
+
+
+#+begin_src emacs-lisp
+(defun my-reset-kill-ring()
+  "Clear the kill ring"
+  (interactive)
+  (setq kill-ring '()))
+
+(defun my-pop-kill-ring ()
+  "Pop and insert from kill ring"
+  (interactive)
+(insert (pop kill-ring)))
+#+end_src
+
 * Organizing and finding files and buffers
 ** Company
 #+BEGIN_SRC emacs-lisp
@@ -457,9 +519,19 @@ Some usage through chords (see chords)
 ** Fuzzy find files (fzf). Bind it to helm-ff
 #+BEGIN_SRC emacs-lisp
 (use-package fzf
-  :init
-  (global-set-key (kbd "C-c g") (lambda () (interactive)
-			    (fzf/start "~"))))
+  :config
+    (global-set-key (kbd "C-c g") 'fzf-find-file)
+  (setq fzf/args "-x --color bw --print-query --margin=1,0 --no-hscroll"
+        fzf/executable "fzf"
+        fzf/git-grep-args "-i --line-number %s"
+        ;; command used for `fzf-grep-*` functions
+        ;; example usage for ripgrep:
+        ;; fzf/grep-command "rg --no-heading -nH"
+        fzf/grep-command "grep -nrH"
+        ;; If nil, the fzf buffer will appear at the top of the window
+        fzf/position-bottom t
+        fzf/window-height 15))
+
 
 (defun my-helm-run-fzf (candidate &optional cmd-stream)
   (interactive)
@@ -472,284 +544,44 @@ Some usage through chords (see chords)
   (with-helm-alive-p
     (helm-exit-and-execute-action 'my-helm-run-fzf)))
 
-(defun my-helm-ff-switch-to-fzf-dir ()
+(defun my-helmf-switch-to-fzf-dir ()
   "Stop helm find-files and use fzf (directories)"
   (interactive)
   (with-helm-alive-p
     (helm-get-default-action (lambda (x) (my-helm-run-fzf x "fdfind --type d")))))
 
 #+END_SRC
-* Org Mode
-
-
-  
-Unbind colliding mappings
-#+begin_src emacs-lisp
-(define-key org-mode-map (kbd "M-<down>") nil)
-(define-key org-mode-map (kbd "M-<up>") nil)
-(define-key org-mode-map (kbd "M-<left>") nil)
-(define-key org-mode-map (kbd "M-<right>") nil)
-(define-key org-mode-map (kbd "ESC <left>") 'org-metaleft)
-
-(add-hook 'org-mode-hook 'auto-revert-mode)
-#+end_src
-** Org-appear
-   
-   Hide emphasis markers unless under cursor
-   #+begin_src emacs-lisp
-   (use-package org-appear
-     :straight (:host github :repo "awth13/org-appear")
-     :init
-     (setq org-hide-emphasis-markers t)
-     :config
-     (add-hook 'org-mode-hook 'org-appear-mode))
-   #+end_src
-** Don't trail whitespace in org mode
-#+begin_src emacs-lisp
- (add-hook 'org-mode-hook (lambda () (setq show-trailing-whitespace nil)))
-#+end_src
-
-** Clock
-
-(Disabled)   
-   
-#+begin_src emacs-lisp :tangle no
- (unless (boundp 'org-clocking-buffer)
-   (defalias 'org-clocking-buffer #'org-clock-is-active))
-
- (org-babel-do-load-languages
-  'org-babel-load-languages
-  '((python . t)))
-#+end_src
-
-** Journal, Rifle
-
- #+BEGIN_SRC emacs-lisp
- (require 'find-lisp)
- (setq calendar-week-start-day 1)
- (use-package org-journal
-   :init
-   (setq org-journal-dir "~/Org/Journal")
-   (setq org-journal-file-type 'weekly)
-   (setq org-journal-file-format "%Y-%m-%d.org")
-   (setq org-journal-date-format "%y-%m-%d, %A"))
- #+END_SRC
- 
-** ox-gfm allows exporting Github Flavored markdown
- #+BEGIN_SRC emacs-lisp
- (use-package ox-gfm)
- #+END_SRC
-
-** Generic Org settings 
-
-All Org files are in /~Org/, add safeguards for disallowing editing folded trees,
-refile tweaks. Auto-save all org buffers. 
-
-Ignore some files, such as the capture template.
-
- #+BEGIN_SRC emacs-lisp
- (require 'find-lisp)
- (setq org-agenda-dim-blocked-tasks t)
- (setq org-enforce-todo-dependencies t)
- (setq org-agenda-directory "~/Org/")
- (setq org-directory "~/Org/")
- (setq org-agenda-files
-       (remove (expand-file-name "~/Org/capture.org")
-       (find-lisp-find-files org-agenda-directory "\.org$")))
-
-
- (setq-default org-catch-invisible-edits 'smart)
- (setq org-default-notes-file "~/Org/notes.org")
- (setq org-refile-targets '((org-agenda-files . (:maxlevel . 10))))
-
- (setq org-refile-use-outline-path 'file)
- (setq org-outline-path-complete-in-steps nil)
- (setq org-refile-allow-creating-parent-nodes 'confirm)
-
- (add-hook 'auto-save-hook 'org-save-all-org-buffers)
- (add-hook 'org-mode-hook 'flyspell-mode)
-
- (add-hook 'org-agenda-mode-hook (lambda () (setq show-trailing-whitespace nil)))
-
- (use-package org-super-agenda
-   :config
-   (setq org-super-agenda-groups
-     '((:name "Overdue" :scheduled past)
-       (:name "Today" 
-           :time-grid t)
-           (:auto-tags t)))
-   (org-super-agenda-mode t))
- #+END_SRC
-
-** Plantuml
-
-#+BEGIN_SRC emacs-lisp
-  (defun my-org-confirm-babel-evaluate (lang body)
-    (not (string= lang "plantuml")))  ; don't ask for ditaa
-  (setq org-confirm-babel-evaluate 'my-org-confirm-babel-evaluate)
-  (require 'ob-plantuml)
-  (setq org-plantuml-jar-path
-        (expand-file-name (concat dropbox-home "/home/elisp/java-libs/plantuml.jar")))
-
-  (load (expand-file-name (concat dropbox-home "/home/elisp/ob-plantuml.el")))
-#+END_SRC
-
-** Org clock stuff
-#+BEGIN_SRC emacs-lisp :tangle no
-    (use-package org-clock-today)
-    (use-package org-mru-clock)
-  (defun x-org-clock-sum-today ()
-    "Visit each file in `org-agenda-files' and return the total time of today's
-  clocked tasks in minutes."
-    (let ((files (org-agenda-files))
-          (total 0))
-      (org-agenda-prepare-buffers files)
-      (dolist (file files)
-        (with-current-buffer (find-buffer-visiting file)
-          (setq total (+ total (org-clock-sum-today)))))
-      total))
-  (defun x-org-clock-get-clock-string-today ()
-    "Form a clock-string, that will be shown in the mode line.
-  If an effort estimate was defined for the current item, use
-  01:30/01:50 format (clocked/estimated).
-  If not, show simply the clocked time like 01:50. All Tasks"
-    (let ((clocked-time (x-org-clock-sum-today)))
-      (if org-clock-effort
-          (let* ((effort-in-minutes (org-duration-to-minutes org-clock-effort))
-                 (work-done-str
-                  (propertize (org-duration-from-minutes clocked-time)
-                              'face
-                              (if (and org-clock-task-overrun
-                                       (not org-clock-task-overrun-text))
-                                  'org-mode-line-clock-overrun
-                                'org-mode-line-clock)))
-                 (effort-str (org-duration-from-minutes effort-in-minutes)))
-            (format (propertize " [%s/%s] (%s)" 'face 'org-mode-line-clock)
-                    work-done-str effort-str org-clock-heading))
-        (format (propertize " [%s] (%s)" 'face 'org-mode-line-clock)
-                (org-duration-from-minutes clocked-time)
-                org-clock-heading))))
-  (defun current-clock-time-to-file ()
-     (interactive)
-     (with-temp-file "~/.emacs.d/.task"
-       (if (org-clocking-p)
-         (insert (x-org-clock-get-clock-string-today))
-         (insert ""))))
-  (run-with-timer 1 60 'current-clock-time-to-file)
-  (add-hook 'org-clock-in-hook 'current-clock-time-to-file)
-  (add-hook 'org-clock-out-hook 'current-clock-time-to-file)
-
-
-#+END_SRC
-** org-clubhouse
-#+BEGIN_SRC emacs-lisp
-(use-package org-clubhouse
-  :straight (:host github :repo "glittershark/org-clubhouse")
-  :init (setq org-clubhouse-state-alist
-      '(("TODO"   . "Backlog")
-        ("ACTIVE" . "In Development")
-        ("PENDING" . "Pending")
-        ("REVIEW"   . "Ready for Review")
-        ("DONE"   . "Completed")))
-        (setq org-clubhouse-workflow-name "Development"))
-#+END_SRC
-** Emphasis ant other styles
-#+BEGIN_SRC emacs-lisp
-(setq org-ellipsis "⤵")
-(setq org-emphasis-alist '(
-			  ("/"  (:foreground "red" :background: "yellow"))
-			  ("\""  (:foreground "red" :background: "yellow"))
-			  ("/" italic "<i>" "</i>")
-			  ("_" underline "<span style=\"text-decoration:underline;\">" "</span>")
-			  ("-" (:overline t) "<span style=\"text-decoration:overline;\">" "</span>")
-			  ("=" org-code "<code>" "</code>" verbatim)
-			  ("*" org-verbatim "<code>" "</code>" verbatim)
-			  ("+" (:strike-through t) "<del>" "</del>")))
-(setq org-hide-emphasis-markers nil)
-#+END_SRC
-** Org-analyzer
-#+BEGIN_SRC emacs-lisp :tangle no
-(use-package org-analyzer)
-#+END_SRC
-** TODO Org attach screenshot
-
-[[https://github.com/dfeich/org-screenshot][org-screenshot]] Do this to the end.
-
-#+begin_src emacs-lisp
-(use-package org-attach-screenshot
-  :config 
-  (define-key org-mode-map (kbd "C-c s") 'org-attach-screenshot)
-  (setq org-attach-screenshot-dirfunction
-	(lambda () "~/Org/Screenshots")		  
-	org-attach-screenshot-command-line "spectacle -o %f -r -b -n"))
-#+end_src
-
-** Capture templates
-#+BEGIN_SRC emacs-lisp
-(use-package capture-org-template
-  :straight (:host github :repo "ration/capture-org-template.el")
-
-  :config 
-  (setq org-capture-templates (capture-org-template "~/Org/capture.org")))
-
-;; (setq org-capture-templates (append
-;;                              (quote
-;;                               (
-;;                                ("P" "TODO Email" entry 
-;;                                 (file+headline "~/Org/todo.org" "Inbox")
-;;                                 "* TODO %:fromname: %a %?\nDEADLINE: %(org-insert-time-stamp (org-read-date nil t \"+2d\"))")
-;;                                ("b" "Bloggging" entry
-;;                                 (file (lambda () "~/Org/blog.org"))
-;;                                 "")
-;;                                ("n" "Note" entry
-;;                                 (file (lambda () "~/Org/notes.org"))
-;;                                 "* %?")
-;;                                ("t" "Generic TODO" entry
-;;                                 (file+headline "~/Org/todo.org" "Inbox")
-;;                                 "* TODO %?")
-;;                                ("l" "Org Capture Text" entry (file+headline "~/Org/todo.org" "Protocol")
-;;                                "* TODO %?\n%u\n#+begin_example\n%i\n#+end_example\n\nSource: %:link\n"
-;;                                :empty-lines 1)
-;;                                ("L" "Org Capture" entry (file+headline "~/Org/todo.org" "Protocol")
-;;                                "* TODO %?\n%u\nSource: %:link\n"
-;;                                :empty-lines 1)
-;;                                )) (if (boundp 'project-specific-templates) project-specific-templates)))
-
-#+END_SRC
-** Reload images when running babel
-#+BEGIN_SRC emacs-lisp
-(defun shk-fix-inline-images ()
-  (when org-inline-image-overlays)
-    (org-redisplay-inline-images))
-
-(with-eval-after-load 'org
-  (add-hook 'org-babel-after-execute-hook 'shk-fix-inline-images))
-#+END_SRC
-** Bullets
-#+BEGIN_SRC emacs-lisp
-  (use-package org-bullets
-    :config (add-hook 'org-mode-hook (lambda () (org-bullets-mode 1))))
-#+END_SRC
-** org-gcal
-If org-cal keys has been set install org-gcal and add a sync for it in agenda
-#+begin_src emacs-lisp
-(if (boundp 'org-gcal-client-id)
-    (use-package org-gcal
-      :config 
-      (setq org-gcal-auto-archive t)
-      (setq org-gcal-notify-p nil)
-      (setq org-gcal-remove-api-cancelled-events t)
-      (define-key org-agenda-mode-map (kbd "ö") 'org-gcal-fetch)))
-#+end_src
-** Todoist
-#+begin_src emacs-lisp
-(if (boundp 'todoist-token)
-    (use-package todoist
-      :init (setq todoist-backing-buffer (concat org-agenda-directory "todoist.org"))))
-#+end_src
 * Hydra
 #+begin_src emacs-lisp
+(defun jump-to-same-indent (direction)
+  (interactive "P")
+  (let ((start-indent (current-indentation)))
+    (while
+        (and (not (bobp))
+             (zerop (forward-line (or direction 1)))
+             (or (= (current-indentation)
+                    (- (line-end-position) (line-beginning-position)))
+                 (> (current-indentation) start-indent)))))
+  (back-to-indentation))
+
 (use-package hydra)
+(defhydra hydra-movement (global-map "M-m")
+  "Move"
+  ("w" backward-sentence)
+  ("a" (lambda () (interactive)(jump-to-same-indent -1)))
+  ("s" (lambda () (interactive)(jump-to-same-indent 1)))
+  ("d" forward-sentence)
+
+  ("l" forward-char)
+  ("j" backward-char)
+  ("k" next-line)
+  ("i" previous-line)
+  ("o" forward-word)
+  ("u" backward-word)
+  ("m" avy-goto-line :exit t)
+  ("," avy-goto-char-timer :exit t)
+;;  ("a" ace-jump-word-mode :exit t)
+  ("q" nil))
 #+end_src
 * Window management
 Some window management and switching window is in global bindings. Maybe move here?
@@ -782,7 +614,7 @@ Only need the resizing functions now
                (face-remap-add-relative 'default 'flash-active-buffer-face)))
 (add-hook 'buffer-list-update-hook 'flash-active-buffer)
 #+end_src
-** Ace-windows
+** Ace-windows and 
 #+begin_src emacs-lisp
 (use-package ace-window
 :bind (("C-x §" . ace-window)))
@@ -816,41 +648,49 @@ TODO setup purpose
 ;;  (add-to-list)
   (purpose-mode t))
 #+end_src
+* Dotenv
+#+begin_src emacs-lisp
+(use-package dotenv
+    :straight (:host github :repo "pkulev/dotenv.el"))
+#+end_src
+
 * File editing modes
-  *
-#+BEGIN_SRC emacs-lisp
+** All Kinds
+ #+BEGIN_SRC emacs-lisp
 
-(if (version<= emacs-version "26")
-    (use-package cl))
+    (if (version<= emacs-version "26")
+        (use-package cl))
 
-  (use-package pcre2el)
+      (use-package pcre2el)
 
-  (use-package xml+)
-  (use-package restclient)
-  (use-package powershell)
-  (use-package plantuml-mode
-    :init
-    (setq plantuml-jar-path (concat dropbox-home "/home/elisp/java-libs/plantuml.jar"))
-    (setq plantuml-default-exec-mode 'jar))
+      (use-package xml+)
+       (use-package jq-mode)
 
-  (use-package dockerfile-mode)
-  (use-package graphql)
-  (use-package graphql-mode)
+      (use-package jq-mode)
+      (use-package powershell)
+      (use-package plantuml-mode
+        :init
+        (setq plantuml-jar-path (concat dropbox-home "/home/elisp/java-libs/plantuml.jar"))
+        (setq plantuml-default-exec-mode 'jar))
 
-  (use-package yaml-mode
-    :bind ("C-<tab>" . outline-cycle)
-    :hook (yaml-mode . outline-minor-mode)
-          (yaml-mode . (lambda ()  (progn (setq outline-regexp "^ *##")))))
+      (use-package dockerfile-mode)
+      (use-package graphql)
+      (use-package graphql-mode)
+
+      (use-package yaml-mode
+        :bind ("C-<tab>" . outline-cycle)
+        :hook (yaml-mode . outline-minor-mode)
+              (yaml-mode . (lambda ()  (progn (setq outline-regexp "^ *##")))))
 
 
-  (use-package live-py-mode
-    :config
-    (setq live-py-version "python3"))
-  (use-package highlight-indent-guides
-    :config
-    (setq highlight-indent-guides-method 'character)
-    (add-hook 'prog-mode-hook 'highlight-indent-guides-mode))
-#+END_SRC
+      (use-package live-py-mode
+        :config
+        (setq live-py-version "python3"))
+      (use-package highlight-indent-guides
+        :config
+        (setq highlight-indent-guides-method 'bitmap))
+;;        (add-hook 'prog-mode-hook 'highlight-indent-guides-mode))
+ #+END_SRC
 ** json
 
 If you regularly use JSON string payloads embedded in another payload, you can use this to extract the contents as prettified json.
@@ -867,11 +707,29 @@ If you regularly use JSON string payloads embedded in another payload, you can u
           (clipboard-kill-region (point-min) (point-max))))))
 (use-package json-mode)
 #+end_src
+** Restclient
+#+begin_src emacs-lisp
+(straight-use-package '(restclient
+  :type git :host github :repo "pashky/restclient.el"
+  :files ("restclient.el" "restclient-helm.el" "restclient-jq.el")))
+
+(use-package ob-restclient :straight (:host github :repo "alf/ob-restclient.el")
+  :config
+  (org-babel-do-load-languages
+   'org-babel-load-languages
+   '((restclient . t)))
+  (add-to-list 'org-src-lang-modes '("js" . json))
+)
+
+
+#+end_src
+
+
 ** Markdown
 #+BEGIN_SRC emacs-lisp
 (add-hook 'markdown-mode-hook 'flyspell-mode)
 #+END_SRC
-** DONE Type/Javascript
+** Type/Javascript
 #+BEGIN_SRC emacs-lisp
 
 (defun my-lsp-mode-before-save-hook ()
@@ -938,7 +796,7 @@ If you regularly use JSON string payloads embedded in another payload, you can u
 
 (use-package typescript-mode
   :ensure t
-  :bind (("M-<return>" . ts-goto-test-or-source))
+;;  :bind (("M-<return>" . ts-goto-test-or-source))
   :config
   (setq typescript-indent-level 2)
   (add-hook 'typescript-mode #'subword-mode))
@@ -972,9 +830,19 @@ If you regularly use JSON string payloads embedded in another payload, you can u
   (define-key elpy-mode-map (kbd "M-<up>") nil)
   (define-key elpy-mode-map (kbd "M-<left>") nil)
   (define-key elpy-mode-map (kbd "M-<right>") nil)
-  (setq elpy-rpc-pythonpath "/home/lahtela/.emacs.d/straight/repos/elpy")
 :init (elpy-enable))
 #+END_SRC
+
+LSP related
+#+begin_src emacs-lisp
+(defun my-select-checker ()
+  (setq flycheck-disabled-checkers '(python-pylint))
+  (flycheck-select-checker 'python-flake8))
+
+(setq flycheck-python-flake8-executable "flake8")
+(add-hook 'python-mode-hook #'lsp) ; or lsp-deferred
+(add-hook 'python-mode-hook 'my-select-checker)
+#+end_src
 ** logview
 #+begin_src emacs-lisp
 (use-package logview
@@ -1004,9 +872,30 @@ LSP is set up, but does not trigger automatically from builds
   :config (setq lsp-clients-typescript-log-verbosity "debug")
   (setq gc-cons-threshold 100000000)
   (setq lsp-file-watch-threshold 30000)
-  (setq lsp-log-io 1))
+  (setq lsp-log-io 1)
+  :custom
+  ;; Rust related stuff
+  (lsp-rust-analyzer-cargo-watch-command "clippy")
+  (lsp-eldoc-render-all t)
+  (lsp-idle-delay 0.6)
+  ;; enable / disable the hints as you prefer:
+  (lsp-rust-analyzer-server-display-inlay-hints t)
+  (lsp-rust-analyzer-display-lifetime-elision-hints-enable "skip_trivial")
+  (lsp-rust-analyzer-display-chaining-hints t)
+  (lsp-rust-analyzer-display-lifetime-elision-hints-use-parameter-names nil)
+  (lsp-rust-analyzer-display-closure-return-type-hints t)
+  (lsp-rust-analyzer-display-parameter-hints nil)
+  (lsp-rust-analyzer-display-reborrow-hints nil)
+  ;; end rust related
+  )
 
-(use-package lsp-ui :commands lsp-ui-mode)
+(use-package lsp-ui
+  :ensure
+  :commands lsp-ui-mode
+  :custom
+  (lsp-ui-peek-always-show nil)
+  (lsp-ui-sideline-show-hover t)
+  (lsp-ui-doc-enable t))
 (use-package helm-lsp :commands helm-lsp-workspace-symbol)
 ;(use-package lsp-treemacs
 ;  :config (lsp-treemacs-sync-mode 1)
@@ -1042,6 +931,402 @@ LSP is set up, but does not trigger automatically from builds
 (use-package clojure-mode)
 (use-package cider)
 #+end_src
+** Web-mode
+#+begin_src emacs-lisp
+(use-package web-mode)
+#+end_src
+** PHP
+#+begin_src emacs-lisp 
+(use-package php-mode)
+#+end_src
+** Bicep
+
+#+begin_src emacs-lisp
+(use-package bicep-mode 
+ :straight (:host github :repo "christiaan-janssen/bicep-mode") )
+#+end_src
+** Rust
+   #+begin_src emacs-lisp
+   (use-package rust-mode)
+   (use-package rustic
+     :ensure
+     :bind (:map rustic-mode-map
+                 ("M-j" . lsp-ui-imenu)
+                 ("M-?" . lsp-find-references)
+                 ("C-c C-c l" . flycheck-list-errors)
+                 ("C-c C-c a" . lsp-execute-code-action)
+                 ("C-c C-c r" . lsp-rename)
+                 ("C-c C-c q" . lsp-workspace-restart)
+                 ("C-c C-c Q" . lsp-workspace-shutdown)
+                 ("C-c C-c s" . lsp-rust-analyzer-status))
+     :config
+     ;; uncomment for less flashiness
+     ;; (setq lsp-eldoc-hook nil)
+     ;; (setq lsp-enable-symbol-highlighting nil)
+     ;; (setq lsp-signature-auto-activate nil)
+
+     ;; comment to disable rustfmt on save
+     (setq rustic-format-on-save t)
+     (add-hook 'rustic-mode-hook 'rk/rustic-mode-hook))
+   (defun rk/rustic-mode-hook ()
+  ;; so that run C-c C-c C-r works without having to confirm, but don't try to
+  ;; save rust buffers that are not file visiting. Once
+  ;; https://github.com/brotzeit/rustic/issues/253 has been resolved this should
+  ;; no longer be necessary.
+  (when buffer-file-name
+    (setq-local buffer-save-without-query t)))
+   #+end_src
+** CSV
+#+begin_src emacs-lisp
+(use-package csv-mode)
+#+end_src
+** Elisp
+*** Highlight variables 
+#+begin_src emacs-lisp
+(use-package highlight-defined)
+(use-package highlight-symbol :straight (:host github :repo "nschum/highlight-symbol.el")
+  :config
+  (setq highlight-symbol-idle-delay 3))
+#+end_src
+** Gnome shell
+
+#+begin_src emacs-lisp :tangle no
+(use-package gnome-shell-mode
+    :straight (:host github :repo "paperwm/gnome-shell-mode"
+    :files ("local/gnome-shell-mode/*")))
+
+(use-package company-gnome-shell
+    :straight (:host github :repo "paperwm/gnome-shell-mode"
+    :files ("local/company-gnome-ell/*.el")))
+
+
+#+end_src
+** TOML
+#+begin_src emacs-lisp
+(use-package toml-mode)
+#+end_src
+** Terraform
+#+begin_src emacs-lisp
+(use-package terraform-mode
+  :custom (terraform-indent-level 2)
+          (hcl-indent-level 2)
+:config
+(defun my-terraform-mode-init ()
+  ;; if you want to use outline-minor-mode
+  ;; (outline-minor-mode 1)
+  )
+
+(add-hook 'terraform-mode-hook 'my-terraform-mode-init))
+#+end_src
+
+* Org Mode
+
+** Monday week start
+
+#+begin_src emacs-lisp
+ (setq calendar-week-start-day 1)
+#+end_src
+** Unbind colliding mappings
+ #+begin_src emacs-lisp
+ (define-key org-mode-map (kbd "M-<down>") nil)
+ (define-key org-mode-map (kbd "M-<up>") nil)
+ (define-key org-mode-map (kbd "M-<left>") nil)
+ (define-key org-mode-map (kbd "M-<right>") nil)
+ (define-key org-mode-map (kbd "C-c C-j") nil)
+ (define-key org-mode-map (kbd "ESC <left>") 'org-metaleft)
+ (global-set-key (kbd "C-c C-x C-j") 'org-clock-goto)
+ (add-hook 'org-mode-hook 'auto-revert-mode)
+ #+end_src
+** Org babel
+   #+begin_src emacs-lisp
+   (use-package ob-ts-node
+     :after org typescript
+     :straight (:host github :repo "tmythicator/ob-ts-node"))
+   (require 'ob-shell)
+   (setq org-confirm-babel-evaluate nil)
+   (org-babel-do-load-languages
+    'org-babel-load-languages
+    '((python . t)
+      (shell . t)
+      (ts-node . t)
+      (ruby . t)))
+   #+end_src
+** Org-appear
+   
+   
+   Hide emphasis markers unless under cursor
+   #+begin_src emacs-lisp
+   (setq org-hide-emphasis-markers t)
+
+   (use-package org-appear
+     :straight (:host github :repo "awth13/org-appear")
+     :config
+     (add-hook 'org-mode-hook 'org-appear-mode))
+   #+end_src
+** Don't trail whitespace in various modes
+#+begin_src emacs-lisp
+(add-hook 'org-mode-hook (lambda () (setq show-trailing-whitespace nil)))
+(add-hook 'eshell-mode-hook (lambda () (setq show-trailing-whitespace nil)))
+#+end_src
+
+** Clock
+
+(Disabled)   
+   
+#+begin_src emacs-lisp :tangle no
+ (unless (boundp 'org-clocking-buffer)
+   (defalias 'org-clocking-buffer #'org-clock-is-active))
+ 
+#+end_src
+
+** Journal, Rifle
+
+ #+BEGIN_SRC emacs-lisp :tangle no
+ (require 'find-lisp)
+ (use-package org-journal
+   :init
+   (setq org-journal-file "~/Org/Journal")
+   (setq org-journal-file-type 'yearly)
+   (setq org-journal-file-format "%Y-%m-%d.org")
+   (setq org-journal-date-format "%Y-%m-%d, %A"))
+ #+END_SRC
+ 
+** ox-gfm allows exporting Github Flavored markdown
+ #+BEGIN_SRC emacs-lisp
+ (use-package ox-gfm)
+ #+END_SRC
+
+** Generic Org settings 
+
+All Org files are in /~Org/, add safeguards for disallowing editing folded trees,
+refile tweaks. Auto-save all org buffers. 
+
+Ignore some files, such as the capture template.
+
+Open the agenda in current window
+
+ #+BEGIN_SRC emacs-lisp
+ (require 'find-lisp)
+ (setq org-agenda-dim-blocked-tasks t)
+ (setq org-enforce-todo-dependencies t)
+ (setq org-agenda-directory "~/Org/Agenda")
+ (setq org-directory "~/Org/")
+ (setq org-agenda-files
+       (remove (expand-file-name "~/Org/capture.org")
+       (find-lisp-find-files org-agenda-directory "\.org$")))
+
+
+ (setq-default org-catch-invisible-edits 'smart)
+ (setq org-default-notes-file "~/Org/notes.org")
+ (setq org-refile-targets '((org-agenda-files . (:maxlevel . 10))))
+ (setq org-log-done 'time)
+ (setq org-refile-use-outline-path 'file)
+ (setq org-outline-path-complete-in-steps nil)
+ (setq org-refile-allow-creating-parent-nodes 'confirm)
+ (setq org-agenda-window-setup 'current-window) 
+ (add-hook 'auto-save-hook 'org-save-all-org-buffers)
+
+
+
+ #+END_SRC
+
+** Org recoll
+#+begin_src emacs-lisp
+  (use-package org-recoll)
+#+end_src
+
+** Org alert
+
+#+begin_src emacs-lisp
+(use-package org-alert
+  :custom (alert-default-style 'notifications)
+  :config (setq org-alert-interval 3000
+                org-alert-notification-title "Org Notification")
+          (org-alert-enable))
+                
+#+end_src
+
+* Plantuml
+
+#+BEGIN_SRC emacs-lisp
+(defun my-org-confirm-babel-evaluate (lang body)
+  (not (string= lang "plantuml")))  ; don't ask for ditaa
+
+(setq org-confirm-babel-evaluate 'my-org-confirm-babel-evaluate)
+(require 'ob-plantuml)
+(setq org-plantuml-jar-path
+      (expand-file-name (concat dropbox-home "/home/elisp/java-libs/plantuml.jar")))
+
+(load (expand-file-name (concat dropbox-home "/home/elisp/ob-plantuml.el")))
+#+END_SRC
+* Org
+** Org clock stuff
+#+BEGIN_SRC emacs-lisp
+    (use-package org-clock-today)
+    (use-package org-mru-clock)
+  (defun x-org-clock-sum-today ()
+    "Visit each file in `org-agenda-files' and return the total time of today's
+  clocked tasks in minutes."
+    (let ((files (org-agenda-files))
+          (total 0))
+      (org-agenda-prepare-buffers files)
+      (dolist (file files)
+        (with-current-buffer (find-buffer-visiting file)
+          (setq total (+ total (org-clock-sum-today)))))
+      total))
+  (defun x-org-clock-get-clock-string-today ()
+    "Form a clock-string, that will be shown in the mode line.
+  If an effort estimate was defined for the current item, use
+  01:30/01:50 format (clocked/estimated).
+  If not, show simply the clocked time like 01:50. All Tasks"
+    (let ((clocked-time (x-org-clock-sum-today)))
+      (if org-clock-effort
+          (let* ((effort-in-minutes (org-duration-to-minutes org-clock-effort))
+                 (work-done-str
+                  (propertize (org-duration-from-minutes clocked-time)
+                              'face
+                              (if (and org-clock-task-overrun
+                                       (not org-clock-task-overrun-text))
+                                  'org-mode-line-clock-overrun
+                                'org-mode-line-clock)))
+                 (effort-str (org-duration-from-minutes effort-in-minutes)))
+            (format (propertize " [%s/%s] (%s)" 'face 'org-mode-line-clock)
+                    work-done-str effort-str org-clock-heading))
+        (format (propertize " [%s] (%s)" 'face 'org-mode-line-clock)
+                (org-duration-from-minutes clocked-time)
+                org-clock-heading))))
+  (defun current-clock-time-to-file ()
+     (interactive)
+     (with-temp-file "~/.emacs.d/.task"
+       (if (org-clocking-p)
+         (insert (x-org-clock-get-clock-string-today))
+         (insert ""))))
+  (run-with-timer 1 60 'current-clock-time-to-file)
+  (add-hook 'org-clock-in-hook 'current-clock-time-to-file)
+  (add-hook 'org-clock-out-hook 'current-clock-time-to-file)
+
+
+#+END_SRC
+** org-clubhouse
+Not using at the moment 
+#+BEGIN_SRC emacs-lisp :tangle no
+(use-package org-clubhouse
+  :straight (:host github :repo "glittershark/org-clubhouse")
+  :init (setq org-clubhouse-state-alist
+      '(("TODO"   . "Backlog")
+        ("ACTIVE" . "In Development")
+        ("PENDING" . "Pending")
+        ("REVIEW"   . "Ready for Review")
+        ("DONE"   . "Completed")))
+        (setq org-clubhouse-workflow-name "Development"))
+#+END_SRC
+** Emphasis ant other styles
+#+BEGIN_SRC emacs-lisp
+(setq org-ellipsis "⤵")
+(setq org-emphasis-alist '(
+			  ("/"  (:foreground "red" :background: "yellow"))
+			  ("~"  (:foreground "green" :background: "yellow"))
+			  ("/" italic "<i>" "</i>")
+			  ("_" underline "<span style=\"text-decoration:underline;\">" "</span>")
+			  ("-" (:overline t) "<span style=\"text-decoration:overline;\">" "</span>")
+			  ("=" org-code "<code>" "</code>" verbatim)
+			  ("*" org-verbatim "<code>" "</code>" verbatim)
+			  ("+" (:strike-through t) "<del>" "</del>")))
+#+END_SRC
+** Org-analyzer
+#+BEGIN_SRC emacs-lisp :tangle no
+(use-package org-analyzer)
+#+END_SRC
+** DONE Org attach screenshot
+   CLOSED: [2022-04-05 ti 11:51]
+
+[[https://github.com/dfeich/org-screenshot][org-screenshot]] Do this to the end.
+
+#+begin_src emacs-lisp
+(use-package org-attach-screenshot
+  :config 
+  (define-key org-mode-map (kbd "C-c s") 'org-attach-screenshot)
+  (setq org-attach-screenshot-dirfunction
+	(lambda () "~/Org/Screenshots")		  
+	org-attach-screenshot-command-line "spectacle -o %f -r -b -n"))
+#+end_src
+
+** Capture templates
+#+BEGIN_SRC emacs-lisp
+(use-package capture-org-template
+  :straight (:host github :repo "ration/capture-org-template.el")
+  :config 
+  (setq org-capture-templates (capture-org-template "~/Org/capture.org")))
+#+END_SRC
+** Reload images when running babel
+#+BEGIN_SRC emacs-lisp
+(defun shk-fix-inline-images ()
+  (when org-inline-image-overlays)
+    (org-redisplay-inline-images))
+
+(with-eval-after-load 'org
+  (add-hook 'org-babel-after-execute-hook 'shk-fix-inline-images))
+#+END_SRC
+** Bullets
+#+BEGIN_SRC emacs-lisp
+  (use-package org-bullets
+    :config (add-hook 'org-mode-hook (lambda () (org-bullets-mode 1))))
+#+END_SRC
+** org-gcal
+If org-cal keys has been set install org-gcal and add a sync for it in agenda
+#+begin_src emacs-lisp :tangle no
+(if (boundp 'org-gcal-client-id)
+    (use-package org-gcal
+      :config 
+      (setq org-gcal-auto-archive t)
+      (setq org-gcal-notify-p nil)
+      (setq org-gcal-file-alies '(("tatu.lahtela@vincit.fi" . "~/Org/Agenda/calendar.org")))
+      (setq org-gcal-remove-api-cancelled-events t)
+      (define-key org-agenda-mode-map (kbd "ö") 'org-gcal-fetch)))
+#+end_src
+** HTMLize, HTML agenda exports
+#+begin_src emacs-lisp
+(use-package htmlize)
+#+end_src
+** Todoist
+#+begin_src emacs-lisp
+(if (boundp 'todoist-token)
+    (use-package todoist
+      :init (setq todoist-backing-buffer (concat org-agenda-directory "todoist.org"))))
+#+end_src
+** Org-ql
+#+begin_src emacs-lisp
+(use-package org-ql)
+#+end_src
+** Org agenda custom views and export
+
+Agenda views are stored with a separate script from agenda.el:
+#+begin_src shell :tangle no
+#!/bin/bash
+emacs -batch -l ~/.emacs.d/agenda.el -eval '(org-batch-store-agenda-views)'
+#+end_src
+
+
+#+begin_src emacs-lisp
+(load-file (expand-file-name "~/.emacs.d/super-agenda-config.el"))
+
+(defun my-load-z-agenda ()
+  (interactive)
+  (org-agenda nil "a"))
+(global-set-key (kbd "C-c a") 'my-load-z-agenda)
+#+end_src
+** Archive custom commands
+
+#+begin_src emacs-lisp
+(defun my-org-archive-done-tasks ()
+  (interactive)
+  (org-map-entries
+   (lambda ()
+     (org-archive-subtree)
+     (setq org-map-continue-from (org-element-property :begin (org-element-at-point))))
+   "/DONE" 'file))
+#+end_src
+
 * Compilation modifications
 Change compilation directory
 #+begin_src emacs-lisp
@@ -1052,15 +1337,20 @@ Change compilation directory
 #+end_src
 * Programming helpers
 * Lastpass
-#+begin_example emacs-lisp
+#+begin_src emacs-lisp  :tangle no
 (use-package lastpass
  :config
- (setq lastpass-user "lahtela@iki.fi")
+ (setq lastpass-user "tatu.lahtela@vincit.fi")
+ (setq lastpass-multifactor-use-passcode t)
  (setq lastpass-trust-login t)
  (lastpass-auth-source-enable))
-#+end_example
-* Elfeed (RSS reader)
+#+end_src
+* Unis password store
 #+begin_src emacs-lisp
+(use-package password-store)
+#+end_src
+* Elfeed (RSS reader)
+#+begin_src emacs-lisp :tangle no
 (defun my-elfeed-tag-sort (a b)
 ;  (message (format "%s" a))
   (let* ((a-tags (format "%s" (elfeed-entry-tags a)))
@@ -1073,8 +1363,8 @@ Change compilation directory
   :config
     (setq shr-width 80) ;; Read view narrowing
     (setf elfeed-search-sort-function #'my-elfeed-tag-sort))
-(use-package elfeed-goodies
-:config (elfeed-goodies/setup))
+;;(use-package elfeed-goodies
+;;:config (elfeed-goodies/setup))
 
 ;; (setq elfeed-log-level 'debug)
 (use-package elfeed-protocol
@@ -1187,7 +1477,7 @@ Automatic filtering of some entries
 
 Filter feed to current topic
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
 (defun my-elfeed-filter-current-feed ()
   (interactive)
   (let* ((entry (elfeed-search-selected :single))
@@ -1198,14 +1488,36 @@ Filter feed to current topic
     (elfeed-search-update :force))))
 (define-key elfeed-search-mode-map "f" 'my-elfeed-filter-current-feed)
 #+end_src
+** elfeed-tube
 
+#+begin_src emacs-lisp :tangle no
+(use-package elfeed-tube
+  :straight (:host github :repo "karthink/elfeed-tube")
+  :config
+  (elfeed-tube-setup)
+  
+  :bind (:map elfeed-show-mode-map
+         ("F" . elfeed-tube-fetch)
+         ([remap save-buffer] . elfeed-tube-save)
+         :map elfeed-search-mode-map
+         ("F" . elfeed-tube-fetch)
+         ([remap save-buffer] . elfeed-tube-save)))
+
+(use-package elfeed-tube-mpv
+  :straight (:host github :repo "karthink/elfeed-tube")
+  :bind (:map elfeed-show-mode-map
+              ("C-c C-f" . elfeed-tube-mpv-follow-mode)
+              ("C-c C-w" . elfeed-tube-mpv-where)))
+#+end_src
 * UUID
 #+begin_src emacs-lisp
 (use-package uuid)
 #+end_src
 
 * Completion frameworks, Helm, Swoop and related
-#+BEGIN_SRC emacs-lisp 
+
+** Helm
+#+BEGIN_SRC emacs-lisp :tangle no
 (defun helm-execute-if-single-persistent-action (&optional attr split-onewindow)
   "Execute persistent action if the candidate list is less than 2 OR if theres no input and only one non trivial thing to select from"
   (interactive)
@@ -1236,17 +1548,17 @@ Filter feed to current topic
          ("M-y" . helm-show-kill-ring)
 
          ("C-x C-f" . helm-find-files)
+         ("C-c C-f" . helm-projectile-find-file)         
          :map helm-find-files-map
          ("C-," . my-helm-ff-switch-to-fzf)
          ("C-." . my-helm-ff-switch-to-fzf-dir)
+         ("M-c" . my-helm-ff-switch-to-fzf-dir)
          ("<C-backspace>" . helm-find-files-up-one-level)
          :map helm-read-file-map
          ("<C-backspace>" . helm-find-files-up-one-level)
-
          :map helm-map
          ([tab] . helm-execute-if-single-persistent-action)
          ("C-i" . helm-select-action)))
-
 (use-package helm-ag
   :init (custom-set-variables
          '(helm-follow-mode-persistent t)))
@@ -1266,6 +1578,103 @@ Filter feed to current topic
   :init
   (add-to-list 'helm-completing-read-handlers-alist '(org-set-tags-command . helm-org-completing-read-tags)))
 #+END_SRC
+** Vertico+orderless
+#+begin_src emacs-lisp
+(use-package general)
+(use-package vertico
+  :init
+  (vertico-mode)
+  (vertico-multiform-mode)
+  (setq vertico-multiform-categories
+        '((file grid)
+          (jinx grid (vertico-grid-annotate . 20))
+          (citar buffer)))
+  (setq vertico-cycle t) ;; enable cycling for 'vertico-next' and 'vertico-prev'
+  :general
+  (:keymaps 'vertico-map
+            ;; keybindings to cycle through vertico results.
+            "C-j" 'vertico-next
+            "C-k" 'vertico-previous
+            "C-f" 'vertico-exit
+            "<backspace>" 'vertico-directory-delete-char
+            "C-<backspace>" 'vertico-directory-delete-word
+            "C-w" 'vertico-directory-delete-word
+            "RET" 'vertico-directory-enter)
+  (:keymaps 'minibuffer-local-map
+            "M-h" 'backward-kill-word))
+
+(use-package orderless
+  :init
+  (setq completion-styles '(orderless)
+        completion-category-defaults nil
+        completion-category-overrides '((file (styles partial-completion)))))
+
+(use-package savehist
+  :init
+  (savehist-mode))
+
+(use-package marginalia
+  :after vertico
+  :custom
+  (marginalia-annotators '(marginalia-annotators-heavy marginalia-annotators-light nil))
+  :init
+  (marginalia-mode))
+
+
+(use-package swiper)
+
+#+end_src 
+** Marginalia/Embark
+  #+begin_src emacs-lisp :tangle no
+  (use-package marginalia 
+    :ensure t
+    :config
+    (marginalia-mode))
+
+  (use-package embark
+    :ensure t
+
+    :bind
+    (("C-." . embark-act)         ;; pick some comfortable binding
+     ("M-." . embark-dwim)        ;; good alternative: M-.
+     ("C-h B" . embark-bindings)) ;; alternative for `describe-bindings'
+
+    :init
+
+    ;; Optionally replace the key help with a completing-read interface
+    (setq prefix-help-command #'embark-prefix-help-command)
+
+    :config
+    " . embark-bindings)) ;; alternative for `describe-bindings'
+
+    :init
+
+    ;; Optionally replace the key help with a completing-read interface
+    (setq prefix-help-command #'embark-prefix-help-command)
+
+    :config
+  
+    ;; Hide the mode line of the Embark live/completions buffers
+    (add-to-list 'display-buffer-alist
+                 '("
+    ;; Hide the mode line of the Embark live/completions buffers
+    (add-to-list 'display-buffer-alist
+                 '("\\`\\*Embark Collect \\(Live\\|Completions\\)\\*"
+                   nil
+                   (window-parameters (mode-line-format . none)))))
+
+  ;; Consult users will also want the embark-consult package.
+  (use-package embark-consult
+    :ensure t
+    :after (embark consult)
+    :demand t ; only necessary if you have the hook below
+    ;; if you want to have consult previews as you move around an
+    ;; auto-updating embark collect buffer
+    :hook
+    (embark-collect-mode . consult-preview-at-point-mode))
+
+  #+end_src
+
 * (Ma) Git
 Add diffall to command list
 #+BEGIN_SRC emacs-lisp
@@ -1283,8 +1692,8 @@ Add diffall to command list
   (transient-bind-q-to-quit)
   (transient-insert-suffix 'magit-diff "d" '("a" "Diffall" magit-diffall)))
 
-(use-package magit-delta
-  :hook (magit-mode . magit-delta-mode))
+; (use-package magit-delta
+;  :hook (magit-mode . magit-delta-mode))
 
 
 (use-package forge)
@@ -1302,10 +1711,12 @@ Add diffall to command list
 * Blogging
 #+BEGIN_SRC emacs-lisp
 (use-package easy-jekyll
-  :config
+  :init
   (setq easy-jekyll-basedir (concat dropbox-home "git/blog/"))
   (setq easy-jekyll-url "https://lahtela.me")
-  (setq markdown-command "pandoc -f markdown -t html -s --mathjax --highlight-style=pygments"))
+  (setq markdown-command "pandoc -f markdown -t html -s --mathjax --highlight-style=pygments")
+  
+)
 #+END_SRC
 * Save bookmarks always
 If you set the variable bookmark-save-flag to 1, each command that sets a bookmark will also save your bookmarks; this
@@ -1318,9 +1729,8 @@ use M-x bookmark-save.
 (bookmark-bmenu-list)
 
 #+end_src
-* Dashboard
-#+BEGIN_SRC emacs-lisp
-
+* Dashboard (Disabled)
+#+BEGIN_SRC emacs-lisp :tangle no
 (defun dashboard-insert-mu4e (list-size)
   (dashboard-insert-section
    "Mu4e"
@@ -1329,7 +1739,7 @@ use M-x bookmark-save.
    "e"
    `(lambda (&rest ignore) (pcase ,el
                              ("Dashboard" (mu4e))
-                             ("Work INBOX" (mu4e-headers-search "maildir:\"/Work/INBOX\""))))
+                             ("Work INBOX" (mu4e-headers-search (format "maildir:\"/%s/INBOX\"" my-mu-work-dir)))))
    (format "%s" el)))
 
 
@@ -1355,20 +1765,15 @@ use M-x bookmark-save.
 
   :config
   (require 'dashboard)
-  (add-to-list 'dashboard-item-generators  '(elfeed . dashboard-insert-elfeed))
-  (add-to-list 'dashboard-item-generators  '(mu4e . dashboard-insert-mu4e))
-  (setq dashboard-items '(;;(recents  . 5)
-                        (bookmarks . 5)
-                        ;; (projects . 5)
-                        (agenda . 5)
-                        (mu4e . 5)
-                        (elfeed . 5)))
-
+  (setq dashboard-items '(
+                          (recents  . 5)
+                          (bookmarks . 5)
+                          (projects . 5)
+                          (agenda . 5)
+                          ))
   (dashboard-setup-startup-hook))
-
 #+END_SRC
 * Sync agendas
-
 Synchronize Calendar on boot
 #+begin_src emacs-lisp
 (defun my-sync-orgs ()
@@ -1379,7 +1784,7 @@ Synchronize Calendar on boot
              (org-gcal-sync t t))))
 
 (add-hook 'after-init-hook 'my-sync-orgs)
-(run-with-timer 0 (* 30 60) 'my-sync-orgs)
+(run-with-timer 1800 (* 60 60) 'my-sync-orgs)
 #+end_src
 
 * Browser / EAF
@@ -1389,16 +1794,27 @@ Default browser per domains
  browse-url-browser-function
  '(
   ("drive\\.google" . browse-url-chrome)
+  ("docs\\.google" . browse-url-chrome)
+  ("gitlab" . browse-url-chrome)
   ("." . browse-url-default-browser)
   ))
 #+end_src
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
 (use-package epc)
 (straight-use-package '(eaf :type git
                             :host github
                             :repo "manateelazycat/emacs-application-framework"
                             :files ("*.el" "*.py" "core" "app")))
+#+end_src
+* org-ai
+#+begin_src emacs-lisp :tangle no
+(use-package org-ai
+    :straight (:host github :repo "rksm/org-ai")
+  :config
+  (setq org-ai-default-chat-model "gpt-3.5-turbo"))
+
+;; (org-ai-install-yasnippets)
 #+end_src
 * Terminal (vterm)
 - Synchronize default-directory with the added vterm-eval-cmds
@@ -1486,24 +1902,26 @@ Various global bindings
   (progn (save-buffer (current-buffer)) (kill-current-buffer)))
 
 (global-set-key (kbd "ESC s-<f1>")  'kill-current-buffer)
+(global-set-key (kbd "ESC 1")  'kill-and-save)
 (global-set-key (kbd "ESC <f1>")  'kill-and-save)
 (global-set-key [f1]  'goto-line)
-(global-set-key [f2]  'helm-projects-find-files)
-(global-set-key [f3]  'helm-recentf)
-(global-set-key [f4]  'helm-ag)
+(global-set-key [f2]  'project-find-file)
+(global-set-key [f3]  'locate-with-filter)
+;; (global-set-key [f4]  'helm-ag)
 
 (global-set-key [f5]  'compile)
 (global-set-key [f6]  'next-error)
 (global-set-key [f8]  'magit-status)
 
 (global-set-key [f9]  'org-agenda-list)
-(global-set-key [f10]  'helm-org-rifle)
+;; (global-set-key [f10]  'helm-org-rifle)
 (global-set-key [f11]  (lambda () (interactive) (switch-to-buffer "*dashboard*")))
 (global-set-key [f12]  'org-capture)
 
 (global-set-key (kbd "M-k") 'kill-line-without-copy)
 
 (global-set-key (kbd "C-§") 'whitespace-mode)
+(global-set-key (kbd "C-c f") 'recentf)
 (global-set-key (kbd "s-§") (lambda () (interactive) (find-file current-notes-file)))
 (global-set-key (kbd "M-<up>") 'windmove-up)
 (global-set-key (kbd "M-<down>") 'windmove-down)
@@ -1512,6 +1930,7 @@ Various global bindings
 
 (global-set-key (kbd "M-<backspace>") 'backward-kill-word-without-copy)
 (global-set-key (kbd "M-z") 'zap-up-to-char)
+(global-set-key (kbd "M-l") 'zap-up-to-char)
 (global-set-key (kbd "<M-S-up>") 'scroll-down-line)
 (global-set-key (kbd "<M-S-down>") 'scroll-up-line)
 
@@ -1521,6 +1940,7 @@ Various global bindings
 (global-set-key (kbd "C-z") 'undo)
 (global-set-key (kbd "C-ö") (lambda () (interactive) (point-to-register ?m)))
 (global-set-key (kbd "C-ä") (lambda () (interactive) (jump-to-register ?m)))
+(global-set-key (kbd "M-,") 'xref-pop-marker-stack)
 
 #+END_SRC
 ** Key chords
@@ -1528,12 +1948,29 @@ Various global bindings
 (use-package key-chord
   :config
   (key-chord-define-global ",," 'avy-goto-char-timer)
+  (key-chord-define-global "jj" 'my-avy-goto-line)
   (key-chord-define-global "xx" 'helm-M-x)
-  (key-chord-define-global "vv" 'goto-line)
-  (key-chord-define-global "bb" 'purpose-switch-buffer-overload)
+  (key-chord-define-global "vv" 'helm-buffers-list)
+  (key-chord-define-global "§§" 'org-capture-goto-last-stored)
+  (key-chord-define-global "xs" 'save-buffer)
+  (key-chord-define-global "öö" 'scratch)
+;;  (key-chord-define-global "bb" 'purpose-switch-buffer-overload)
   (key-chord-mode 1))
 #+end_src
+
 * Databases
+
+* Fun
+
+** Typit
+#+begin_src emacs :tangle no
+(use-package typit)
+#+end_src 
+
+* Docker
+#+begin_src emacs-lisp
+(use-package docker-tramp)
+#+end_src
 * AWS SAW
 
 Read AWS logs from emacs.
@@ -1547,25 +1984,31 @@ Read AWS logs from emacs.
 My own task organizer stuff
 #+begin_src emacs-lisp
 (use-package chore
-  :straight (:host github :repo "ration/chore.el")
-  :config (key-chord-define-global "§§" 'chore-switch-to-note))
+  :straight (:host github :repo "ration/chore.el"))
+;;  :config (key-chord-define-global "§§" 'chore-switch-to-note))
 #+end_src
-* email
-#+begin_src emacs-lisp
-(require 'mu4e)
-;; use mu4e for e-mail in emacs
-(setq mail-user-agent 'mu4e-user-agent)
-(setq mu4e-mu-binary "/usr/local/bin/mu")
-(setq mu4e-confirm-quit nil)
-(setq mu4e-html2text-command "html2text -utf8 -width 72")
-(setq mu4e-view-prefer-html t)
-(define-key mu4e-headers-mode-map (kbd "x") (lambda() (interactive) (mu4e-mark-execute-all t)))
+* Email
 
-;; Update email index every 5 minutes
-(run-with-timer 0 (* 5 60) 'mu4e-update-index)
+Require meson and ninja on host. Still stubbornly doesn't work from use-package though.
+#+begin_src emacs-lisp :tangle no
 
-(setq   mu4e-maildir-shortcuts
-    '( (:maildir "/Work/INBOX"   :key ?i)))
+(defun init-mu4e ()
+  (add-to-list 'load-path "/usr/share/emacs/site-lisp/mu4e")
+  (require 'mu4e)
+  ;; use mu4e for e-mail in emacs
+  (setq mail-user-agent 'mu4e-user-agent)
+  (setq mu4e-mu-binary "/usr/bin/mu")
+  (setq mu4e-confirm-quit nil)
+  (setq mu4e-html2text-command "html2text -utf8 -width 72")
+  (setq mu4e-view-prefer-html t)
+  (define-key mu4e-headers-mode-map (kbd "x") (lambda() (interactive) (mu4e-mark-execute-all t)))
+
+  ;; Update email index every 5 minutes
+  (run-with-timer 0 (* 5 60) 'mu4e-update-index)
+
+  (setq   mu4e-maildir-shortcuts
+          `( (:maildir ,(format "/%s/INBOX" my-mu-work-dir)   :key ?i)
+             (:maildir "/iki/INBOX"   :key ?j)))
 
 
   ;; set headers
@@ -1575,75 +2018,105 @@ My own task organizer stuff
            (:from          .  22)
            (:thread-subject .  nil))) ;; alternatively, use :thread-subject
 
- (setq mu4e-contexts
-    `( ,(make-mu4e-context
-	  :name "Iki"
-	  :enter-func (lambda () (mu4e-message "Entering Iki context"))
-          :leave-func (lambda () (mu4e-message "Leaving Iki context"))
-	  ;; we match based on the contact-fields of the message
-	  :match-func (lambda (msg)
-			(when msg
-			  (string-match-p "^/iki" (mu4e-message-field msg :maildir))))
-	  :vars '( ( user-mail-address	    . "lahtela@iki.fi"  )
-                   ( mu4e-refile-folder . "/iki/Archive")
-		   ( user-full-name	    . "Tatu Lahtela" )))
-       ,(make-mu4e-context
-	  :name "Work"
-	  :enter-func (lambda () (mu4e-message "Switch to the Work context"))
-	  ;; no leave-func
-	  ;; we match based on the maildir of the message
-	  ;; this matches maildir /Work and its sub-directories
-	  :match-func (lambda (msg)
-			(when msg
-			  (string-match-p "^/Work" (mu4e-message-field msg :maildir))))
-	  :vars `( ( user-mail-address	     . ,my-work-email-address )
-		   ( user-full-name	     . "Tatu Lahtela" )
-                   ( mu4e-refile-folder . "/Work/Archive")
-		   ( mu4e-compose-signature  . ,my-work-email-signature)))))
+  (setq mu4e-contexts
+        `( ,(make-mu4e-context
+	     :name "Iki"
+	     :enter-func (lambda () (mu4e-message "Entering Iki context"))
+             :leave-func (lambda () (mu4e-message "Leaving Iki context"))
+	     ;; we match based on the contact-fields of the message
+	     :match-func (lambda (msg)
+			   (when msg
+			     (string-match-p "^/iki" (mu4e-message-field msg :maildir))))
+	     :vars '( ( user-mail-address	    . "lahtela@iki.fi"  )
+                      ( mu4e-refile-folder . "/iki/Archive")
+		      ( user-full-name	    . "Tatu Lahtela" )))
+           ,(make-mu4e-context
+	     :name "Work"
+	     :enter-func (lambda () (mu4e-message "Switch to the Work context"))
+	     ;; no leave-func
+	     ;; we match based on the maildir of the message
+	     ;; this matches maildir /Work and its sub-directories
+	     :match-func (lambda (msg)
+			   (when msg
+			     (string-match-p (format "^/%s" my-mu-work-dir) (mu4e-message-field msg :maildir))))
+	     :vars `( ( user-mail-address	     . ,my-work-email-address )
+		      ( user-full-name	     . "Tatu Lahtela" )
+                      ( mu4e-refile-folder . ,(format "/%s/Archive" my-mu-work-dir))
+		      ( mu4e-compose-signature  . ,my-work-email-signature)))))
   ;; set mail folders
   (setq  mu4e-maildir       "~/Mail/"   ;; top-level Maildir
-;;         mu4e-sent-folder   "/Sent"       ;; folder for sent messages
-;;         mu4e-refile-folder "/Archive"
-;;         mu4e-drafts-folder "/Drafts"     ;; unfinished messages
-;;         mu4e-trash-folder  "/Trash"      ;; trashed messages
-;;         user-mail-address "lahtela@iki.fi"
+         ;;         mu4e-sent-folder   "/Sent"       ;; folder for sent messages
+         ;;         mu4e-refile-folder "/Archive"
+         ;;         mu4e-drafts-folder "/Drafts"     ;; unfinished messages
+         ;;         mu4e-trash-folder  "/Trash"      ;; trashed messages
+         ;;         user-mail-address "lahtela@iki.fi"
          )
 
-(add-to-list 'mu4e-bookmarks
-  '(:name "IKI Inbox"
-      :query "maildir:/iki/INBOX"
-      :key ?i))
+  (setq mu4e-bookmarks  
+        `( (:name "Work Inbox"
+                  :query ,(format "maildir:/%s/INBOX" my-mu-work-dir)
+                  :key ?w)
+           (:name "IKI Inbox"
+                  :query "maildir:/iki/INBOX"
+                  :key ?i)
+           (:name "Unread"
+                  :query ,(format "(maildir:/Local OR maildir:/iki/INBOX OR maildir:/%s/INBOX) AND flag:unread" my-mu-work-dir) 
+                  :key ?u)))
 
-(setq mu4e-get-mail-command "true") ;; "offlineimap" <- in cronb
 
-(require 'smtpmail)
-(setq message-send-mail-function 'smtpmail-send-it
-   starttls-use-gnutls t
-   smtpmail-auth-credentials "~/.authinfo.gpg"
-   smtpmail-default-smtp-server "mail.kapsi.fi"
-   smtpmail-smtp-user "talahtel"
-   smtpmail-smtp-server "mail.kapsi.fi"
-   smtpmail-smtp-service 587)
-(global-set-key (kbd "C-c m") 'mu4e)
+  (setq mu4e-get-mail-command "offlineimap")  ;; "offlineimap" <- in cronb
+  (setq mu4e-update-interval 3000)
+
+  (require 'smtpmail)
+  (setq message-send-mail-function 'smtpmail-send-it
+        starttls-use-gnutls t
+        smtpmail-auth-credentials "~/.authinfo.gpg"
+        smtpmail-default-smtp-server "mail.kapsi.fi"
+        smtpmail-smtp-user "talahtel"
+        smtpmail-smtp-server "mail.kapsi.fi"
+        smtpmail-smtp-service 587)
+  (global-set-key (kbd "C-c m") 'mu4e)
+
+  (use-package mu4e-views 
+    :init (setenv "WEBKIT_FORCE_SANDBOX" "0")
+    ;;  (define-key mu4e-headers-mode-map "H" (lambda () (interactive) (mu4e-views-view-current-msg-with-method "html-nonblock")))
+    ) 
+  ;;  (setq mu4e-views-default-view-method "html") ;; make xwidgets default
+  )
+
+(if enable-mu4e
+  (init-mu4e))
+
+
 #+end_src
-Alert from emails [[https://github.com/iqbalansari/mu4e-alert]]
-#+begin_src emacs-lisp
-(use-package mu4e-alert
-:config
-(setq mu4e-alert-interesting-mail-query
+
+#+begin_src emacs-lisp :tangle no
+(if enable-mu4e
+  (progn
+    (use-package mu4e-alert
+      :config
+     (setq mu4e-alert-interesting-mail-query
       (concat
        "flag:unread"
        " AND NOT flag:trashed"
-       " AND (maildir:/Work/INBOX OR maildir:/iki/INBOX)"))
-(add-hook 'after-init-hook #'mu4e-alert-enable-mode-line-display)
-)
+       (format " AND (maildir:/%s/INBOX OR maildir:/iki/INBOX)" my-mu-work-dir)))
+(add-hook 'after-init-hook #'mu4e-alert-enable-mode-line-display))
+(add-hook 'mu4e-view-mode-hook (lambda () (setq show-trailing-whitespace nil)))))
+
+
+(if enable-mu4e
+  (init-mu4e))
+#+end_src
+* GPG
+#+begin_src emacs-lisp
+(setq password-cache-expiry (* 60 24 60))
 #+end_src
 * Spell checking wcheck-mode
 
 If someone knows exactly how this works, I'd like to know!
 But something like this is needed:
 #+begin_src bash :tangle no
-apt-get install enchant-2 libenchant-voikko tmispell-voikko
+apt-get install enchant-2 libenchant-voikko tmispell-voikko libenchant-2-voikko
 #+end_src
 
 This also relies on a script that allows feeding multiple dictionaries:
@@ -1682,6 +2155,31 @@ done < "${2:-/dev/stdin}"
         (message "Added word \"%s\" to the %s dictionary"
                  word language)))))
 
+
+;; (defun my-org-lang-hook ()
+;;  "See if LANG keyword is used and change language accordingly"
+;;  (if-let ((lang (car (last (car (org-collect-keywords '("LANG")))))))
+;;      (progn (wcheck-mode 1)
+;;             (flyspell-mode -1)
+;;             (wcheck-change-language lang))
+;;    (flyspell-mode 1)))
+
+ (defun my-org-load-language ()
+  "See if LANG keyword is used and change language accordingly and enable flyspell.
+
+  For example:
+  ,#+LANG: en
+  Tämä org document is in English."
+  (interactive)
+  (if-let ((lang (car (last (car (org-collect-keywords '("LANG")))))))
+      (progn (flyspell-mode 1)
+             (ispell-change-dictionary lang))
+    (flyspell-mode 1)))
+    
+(add-hook 'org-mode-hook 'my-org-load-language)
+#+END_SRC
+
+#+BEGIN_src emacs-lisp :tangle no
 (use-package wcheck-mode
   :commands (wcheck-mode)
   :init
@@ -1698,14 +2196,10 @@ done < "${2:-/dev/stdin}"
         (action-program . "/usr/bin/enchant-2")
         (action-args "-a" "-d" "en_US")
         (action-parser . enchant-suggestions-menu)
-;;        (read-or-skip-faces
-;;          ;; Only check comments & strings.
-;;          ((emacs-lisp-mode c-mode)
-;;            read font-lock-comment-face
-;;            read font-lock-string-face
-;;            )
-;;          (nil))
-;;
+        (read-or-skip-faces
+         (org-mode skip font-lock-comment-face org-link org-special-keyword org-block-begin-line org-block-end-line org-meta-line font-lock-keyword-face org-block org-tag)
+         (text-mode)
+         (nil read nil))
         )
       ("Finnish"
         (program . "/usr/bin/enchant-2")
@@ -1713,21 +2207,35 @@ done < "${2:-/dev/stdin}"
         (action-program . "/usr/bin/enchant-2")
         (action-args "-a" "-d" "fi_FI")
         (action-parser . enchant-suggestions-menu)
+        (read-or-skip-faces
+         (org-mode skip font-lock-comment-face org-link org-special-keyword org-block-begin-line org-block-end-line org-meta-line font-lock-keyword-face org-block org-tag)
+         (text-mode)
+         (nil read nil))
+
       )
       ("Finglish"
-        (program . "/home/lahtela/bin/finglish")
-        (args "-l" )
+        (program . "/usr/bin/enchant-2")
+        (args "-l" "-d" "fi_FI" "-d" "en_EN")
         (action-program . "/home/lahtela/bin/finglish")
-        (action-args "-a")
+        (args "-d" "-d" "fi_FI" "-d" "en_EN")
+        (read-or-skip-faces
+         (org-mode skip font-lock-comment-face org-link org-special-keyword org-block-begin-line org-block-end-line org-meta-line font-lock-keyword-face org-block)
+         (text-mode)
+         (nil read nil))
         (action-parser . enchant-suggestions-menu)
       )
     ))
   (setq wcheck-language "Finglish")
   )
-#+end_src
-* Spotify
 
-Use smudge. Assumes keys defined in local.el
+
+#+end_src
+* Spotify / MPRIS
+
+
+Use smudge. Assumes keys defined in local.el. 
+
+Also load mpris and some functions to query currently playing album. In [[https://rateyourmusic.com]].
 #+begin_example
 (setq smudge-oauth2-client-secret nil)
 (setq smudge-oauth2-client-id nil)
@@ -1735,10 +2243,54 @@ Use smudge. Assumes keys defined in local.el
 
 #+begin_src emacs-lisp
 (use-package smudge
-  :straight (:host github :repo "danielfm/smudge"))
+  :straight (:host github :repo "danielfm/smudge")
+  :init (setq smudge-transport 'connect))
 
-
+(load-file (expand-file-name "~/git/own/elisp/mpris-control.el"))
+(load-file (expand-file-name "~/git/own/elisp/spotify.el"))
+(mpris-control-info-mode t)
 #+end_src
+* GNOME
+#+begin_src emacs-lisp
+;;; save & shutdown when we get an "end of session" signal on dbus 
+(require 'dbus)
+
+(defun my-register-signals (client-path)
+  "Register for the 'QueryEndSession' and 'EndSession' signals from
+Gnome SessionManager.
+
+When we receive 'QueryEndSession', we just respond with
+'EndSessionResponse(true, \"\")'.  When we receive 'EndSession', we
+append this EndSessionResponse to kill-emacs-hook, and then call
+kill-emacs.  This way, we can shut down the Emacs daemon cleanly
+before we send our 'ok' to the SessionManager."
+  (setq my-gnome-client-path client-path)
+  (let ( (end-session-response (lambda (&optional arg)
+                                 (dbus-call-method-asynchronously
+                                  :session "org.gnome.SessionManager" my-gnome-client-path
+                                  "org.gnome.SessionManager.ClientPrivate" "EndSessionResponse" nil
+                                  t "") ) ) )
+         (dbus-register-signal
+          :session "org.gnome.SessionManager" my-gnome-client-path
+          "org.gnome.SessionManager.ClientPrivate" "QueryEndSession"
+          end-session-response )
+         (dbus-register-signal
+          :session "org.gnome.SessionManager" my-gnome-client-path
+          "org.gnome.SessionManager.ClientPrivate" "EndSession"
+          `(lambda (arg)
+             (add-hook 'kill-emacs-hook ,end-session-response t)
+             (kill-emacs) ) ) ) )
+
+;; DESKTOP_AUTOSTART_ID is set by the Gnome desktop manager when emacs
+;; is autostarted.  We can use it to register as a client with gnome
+;; SessionManager.
+(dbus-call-method-asynchronously
+ :session "org.gnome.SessionManager"
+ "/org/gnome/SessionManager" 
+ "org.gnome.SessionManager" "RegisterClient" 'my-register-signals
+ "Emacs server" (getenv "DESKTOP_AUTOSTART_ID"))
+#+end_src 
+
 * Exit Hook
 
 Just save everything if we get TERM
@@ -1748,3 +2300,39 @@ Just save everything if we get TERM
 (defun save-all () (interactive) (save-some-buffers t))
 (add-hook 'kill-emacs-hook 'save-all)
 #+end_src
+* Scratch buffer
+
+#+begin_src emacs-lisp
+(defun scratch ()
+  "create a new scratch buffer to work in. (could be *scratch* - *scratchX*). Prompts for major mode"
+  (interactive)
+  (let ((option (completing-read "Choose an option: "
+                                 '("none" "json" "elisp"))))
+    (let ((n 0)
+          bufname)
+      (while (progn
+               (setq bufname (concat "*scratch"
+                                     (if (= n 0) "" (int-to-string n))
+                                     "*"))
+               (setq n (1+ n))
+               (get-buffer bufname)))
+      (switch-to-buffer (get-buffer-create bufname))
+      (if (= n 1) initial-major-mode)
+      (pcase option
+            ("json" (json-mode))
+            ("elisp" (emacs-lisp-mode)))))) 
+#+end_src 
+
+* Finally load org agenda
+#+begin_src emacs-lisp
+(defun my-homescreen () 
+  "Just load the agenda week view"
+  (my-load-z-agenda)
+  (delete-other-windows)
+)
+(add-hook 'after-init-hook 'my-homescreen)
+#+end_src
+
+
+
+
