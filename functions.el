@@ -284,3 +284,9 @@ save it in `ffap-file-at-point-line-number' variable."
     (when filename
       (kill-new filename)
       (message "Copied buffer file name '%s' to the clipboard." filename))))
+
+
+;;;
+
+
+

@@ -156,9 +156,12 @@
   :ensure t
   :bind ([f8] . magit-status))
 
-;;; Load functions.el
+;;; Load all other lisps
 
+(load-file (concat user-emacs-directory "local.el"))
 (load-file (concat user-emacs-directory "functions.el"))
+(load-file (concat user-emacs-directory "my-magit.el"))
+
 
 
 ;;; Minibuffer Completion Stack
@@ -299,6 +302,9 @@
  '(custom-safe-themes
    '("c3076fdee603e9768817cfe8dbf6253d5b3cf3bf4602cb32fa2f1df62fe70b1c"
      default))
+ '(ignored-local-variable-values
+   '((lisp-indent-local-overrides (cond . 0) (interactive . 0))
+     (checkdoc-allow-quoting-nil-and-t . t)))
  '(package-selected-packages '(copilot))
  '(package-vc-selected-packages
    '((copilot :url "https://github.com/copilot-emacs/copilot.el" :branch
@@ -340,6 +346,14 @@
 
 (use-package terraform-mode :ensure t)
 
+(with-eval-after-load 'lsp-mode
+  (add-to-list 'lsp-language-id-configuration
+	       '(terraform-mode . "terraform"))
+  (lsp-register-client
+   (make-lsp-client :new-connection (lsp-stdio-connection '("terraform-ls" "serve"))
+                    :major-modes '(terraform-mode)
+                    :server-id 'terraform-ls)))
+
 ;;; Helpful
 
 (use-package helpful :ensure t)
@@ -376,19 +390,72 @@
   ;; 1. Define which modes belong to which "Purpose"
   (add-to-list 'purpose-user-mode-purposes '(prog-mode . edit))
   (add-to-list 'purpose-user-mode-purposes '(text-mode . edit))
+  (add-to-list 'purpose-user-mode-purposes '(magit-status-mode . edit))
   (add-to-list 'purpose-user-mode-purposes '(help-mode . doc))
   (add-to-list 'purpose-user-mode-purposes '(helpful-mode . doc))
+  (add-to-list 'purpose-user-mode-purposes '(info-mode . doc))
+  (add-to-list 'purpose-user-mode-purposes '(special-mode . doc))
   (add-to-list 'purpose-user-mode-purposes '(messages-buffer-mode . logs))
+  (add-to-list 'purpose-user-mode-purposes '(magit-process-mode . logs))
   (add-to-list 'purpose-user-mode-purposes '(compilation-mode . logs))
 
   ;; 2. Update the purpose configuration
   (purpose-compile-user-configuration)
 
   ;; 3. (Optional) Force specific buffer names to purposes
+  (add-to-list 'purpose-user-regexp-purposes '("^\\*[h|H]elp\\*$" . docs))
   (add-to-list 'purpose-user-regexp-purposes '("^\\*Errors\\*$" . logs))
   (add-to-list 'purpose-user-regexp-purposes '("^\\*Messages\\*$" . logs)))
 
-;; No littering
+(defun my-setup-permanent-layout ()
+  "Permanent 2x2 purpose layout:
+TL=edit (current buffer)
+TR=doc (Emacs manual)
+BR=logs (*Messages*)
+BL=general (*scratch*)"
+  (interactive)
+  (require 'window-purpose)
+  (purpose-mode 1)
+  (purpose-compile-user-configuration)
+
+  (delete-other-windows)
+
+  (let* ((w-edit (selected-window))                 ; top-left
+         (w-doc  (split-window w-edit nil 'right))  ; top-right
+         (w-logs (split-window w-doc  nil 'below))  ; bottom-right
+         (w-gen  (split-window w-edit nil 'below))  ; bottom-left
+         (b-scratch  (get-buffer-create "*scratch*"))
+         (b-messages (get-buffer-create "*Messages*")))
+
+    ;; 1) Put the exact buffers where we want them (by selecting the window)
+    (set-window-buffer w-gen b-scratch)
+    (set-window-buffer w-logs b-messages)
+
+    ;; Open the Emacs manual *in the doc window*, without display routing:
+    (with-selected-window w-doc
+      (info "emacs"))
+
+    ;; 2) Now assign purposes to windows
+    (set-window-parameter w-edit 'purpose 'edit)
+    (set-window-parameter w-doc  'purpose 'doc)
+    (set-window-parameter w-logs 'purpose 'logs)
+    (set-window-parameter w-gen  'purpose nil)
+
+    ;; 3) Mark purpose dedication (window-purpose) + Emacs dedication
+    (set-window-parameter w-edit 'purpose-dedicated t)
+    (set-window-parameter w-doc  'purpose-dedicated t)
+    (set-window-parameter w-logs 'purpose-dedicated t)
+    (set-window-parameter w-gen  'purpose-dedicated nil)
+
+    ;; (Optional but helps): also pin buffer purposes explicitly
+    (purpose-set-buffer-purpose (window-buffer w-doc) 'doc)
+    (purpose-set-buffer-purpose b-messages 'logs)
+
+    (select-window w-edit)
+    (balance-windows)))
+
+
+;;; No littering
 
 (use-package no-littering
   :ensure t
@@ -432,6 +499,7 @@
   :ensure t
   :config
   (global-set-key (kbd "C-c s") #'swiper))
+
 
 
 ;;; init.el ends here
