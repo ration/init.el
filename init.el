@@ -485,14 +485,14 @@ BL=general (*scratch*)"
   )
 
 ;; my templates
-
 (use-package capture-org-template
-  :ensure t
-  :elpaca (capture-org-template :host github :repo "ration/capture-org-template.el")
+  :elpaca (capture-org-template
+           :host github
+           :repo "ration/capture-org-template.el")
   :init
-  ;; It's often safer to set the variable in :init so it's ready 
-  ;; the moment Org-capture is called.
-  (setq org-capture-templates (capture-org-template "~/Org/capture.org")))
+  (require 'capture-org-template)
+  (setq org-capture-templates
+        (capture-org-template "~/Org/capture.org")))
 ;;; Swiper
 
 (use-package swiper
