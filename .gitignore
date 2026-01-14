@@ -2,3 +2,12 @@ settings.el
 custom.el
 local.el
 *~
+.lsp-session*
+bookmarks
+*cache*
+elpa/
+elpaca/
+projects
+transient/
+var/
+recentf
