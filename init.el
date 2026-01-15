@@ -140,7 +140,9 @@
 
 (use-package rainbow-delimiters
   :ensure t
-  :hook (emacs-lisp-mode . rainbow-delimiters-mode))
+  :hook
+  (emacs-lisp-mode . rainbow-delimiters-mode)
+  (python-mode . rainbow-delimiters-mode))
 
 ;;; (Ma)git
 
@@ -156,11 +158,6 @@
   :ensure t
   :bind ([f8] . magit-status))
 
-;;; Load all other lisps
-
-(load-file (concat user-emacs-directory "local.el"))
-(load-file (concat user-emacs-directory "functions.el"))
-(load-file (concat user-emacs-directory "my-magit.el"))
 
 
 
@@ -273,24 +270,40 @@
 
 ;; smart tab
 (defun my/smart-tab ()
-  "Context-sensitive tab: cycle outlines, complete, or respect mode-local tab."
+  "Context-sensitive TAB: delegate to major modes, otherwise complete or indent."
   (interactive)
   (cond
-   ;; 1. If in Magit, let Magit handle it
+   ;; 1) Magit: let Magit handle TAB
    ((derived-mode-p 'magit-mode)
-    (call-interactively (key-binding (kbd "TAB"))))
-   
-   ;; 2. If on an Elisp/Org header, cycle visibility
+    (call-interactively
+     (or (local-key-binding (kbd "TAB"))
+         #'indent-for-tab-command)))
+
+   ;; 2) Org: always delegate to Org's own TAB binding
+   ((derived-mode-p 'org-mode)
+    (let ((cmd (or (local-key-binding (kbd "TAB"))
+                   (local-key-binding (kbd "<tab>")))))
+      (when (commandp cmd)
+        (call-interactively cmd))))
+
+   ;; 3) Other outline-based modes: cycle headings
    ((and (bound-and-true-p outline-minor-mode)
-         (save-excursion (beginning-of-line) (looking-at outline-regexp)))
-    (outline-cycle))
-   
-   ;; 3. If there's something to complete, complete it
-   ((looking-back "[a-zA-Z0-9-]+" (line-beginning-position))
+         (save-excursion
+           (beginning-of-line)
+           (looking-at-p outline-regexp)))
+    (if (fboundp 'outline-cycle)
+        (outline-cycle)
+      (outline-toggle-children)))
+
+   ;; 4) Completion
+   ((looking-back "[[:alnum:]-]+"
+                  (line-beginning-position))
     (completion-at-point))
-   
-   ;; 4. Otherwise, just indent
-   (t (indent-for-tab-command))))
+
+   ;; 5) Fallback
+   (t
+    (indent-for-tab-command))))
+
 
 ;; Bind it globally so it works in Python and Elisp
 (global-set-key (kbd "<tab>") #'my/smart-tab)
@@ -303,14 +316,22 @@
    '("c3076fdee603e9768817cfe8dbf6253d5b3cf3bf4602cb32fa2f1df62fe70b1c"
      default))
  '(ignored-local-variable-values
-   '((lisp-indent-local-overrides (cond . 0) (interactive . 0))
+   '((package-lint-main-file . "copilot-chat.el")
+     (lisp-indent-local-overrides (cond . 0) (interactive . 0))
      (checkdoc-allow-quoting-nil-and-t . t)))
  '(package-selected-packages '(copilot))
  '(package-vc-selected-packages
    '((copilot :url "https://github.com/copilot-emacs/copilot.el" :branch
 	      "main")))
  '(safe-local-variable-values
-   '((eval outline-hide-sublevels 1) (chore-backend . "azure-devops")))
+   '((swagg-definitions
+      (:name "ODL" :json
+	     "/home/lahtela/git/Helen/odl/api/apidoc/apidoc.json"
+	     :base "https://localhost:8000" :header-all
+	     ((token . "12345") (Cache-Control . "no-cache")
+	      (Content-Type . "application/json")
+	      (Accept . "application/json") (another-header . "value"))))
+     (eval outline-hide-sublevels 1) (chore-backend . "azure-devops")))
  '(warning-suppress-types '((use-package))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
@@ -344,7 +365,8 @@
 
 ;;; Terraform
 
-(use-package terraform-mode :ensure t)
+(use-package terraform-mode :ensure t
+  :hook (terraform-mode . lsp-mode))
 
 (with-eval-after-load 'lsp-mode
   (add-to-list 'lsp-language-id-configuration
@@ -372,11 +394,12 @@
   ;; Optional: make it pop up faster (default is 1.0 second)
   (setq which-key-idle-delay 0.5))
 
-;;; RG
+;;; RG and other file finding stuff
 
 (use-package rg :ensure t
   :init
   (setq xref-search-program 'ripgrep))
+(use-package zoxide :ensure t)
 
 
 ;;; window layouts
@@ -387,25 +410,27 @@
   :init
   (purpose-mode)
   :config
-  ;; 1. Define which modes belong to which "Purpose"
-  (add-to-list 'purpose-user-mode-purposes '(prog-mode . edit))
-  (add-to-list 'purpose-user-mode-purposes '(text-mode . edit))
-  (add-to-list 'purpose-user-mode-purposes '(magit-status-mode . edit))
-  (add-to-list 'purpose-user-mode-purposes '(help-mode . doc))
-  (add-to-list 'purpose-user-mode-purposes '(helpful-mode . doc))
-  (add-to-list 'purpose-user-mode-purposes '(info-mode . doc))
-  (add-to-list 'purpose-user-mode-purposes '(special-mode . doc))
-  (add-to-list 'purpose-user-mode-purposes '(messages-buffer-mode . logs))
-  (add-to-list 'purpose-user-mode-purposes '(magit-process-mode . logs))
-  (add-to-list 'purpose-user-mode-purposes '(compilation-mode . logs))
+  (setq purpose-user-mode-purposes
+      '((prog-mode . edit)
+        (text-mode . edit)
+        (magit-status-mode . edit)
+	(org-mode  . doc)
+        (help-mode . doc)
+        (messages-buffer-mode . logs)
+        (magit-process-mode . logs)
+        (compilation-mode . logs)))
 
-  ;; 2. Update the purpose configuration
-  (purpose-compile-user-configuration)
+  (setq purpose-user-regexp-purposes
+	'(("^\\*[hH]elp\\*$" . docs)
+          ("^\\*[cC]hat\\*$" . docs)
+          ("^\\*[Ee]rror\\*$" . logs)
+	  ("^\\*[Ww]arn\\*$" . logs)
+          ("^\\*Messages\\*$" . logs)))
+  (setq purpose-use-default-configuration t)
+  (purpose-compile-user-configuration))
 
-  ;; 3. (Optional) Force specific buffer names to purposes
-  (add-to-list 'purpose-user-regexp-purposes '("^\\*[h|H]elp\\*$" . docs))
-  (add-to-list 'purpose-user-regexp-purposes '("^\\*Errors\\*$" . logs))
-  (add-to-list 'purpose-user-regexp-purposes '("^\\*Messages\\*$" . logs)))
+
+;;purpose-user-mode-purposes
 
 (defun my-setup-permanent-layout ()
   "Permanent 2x2 purpose layout:
@@ -473,9 +498,19 @@ BL=general (*scratch*)"
             :rev :newest
             :branch "main")
   :after (copilot-install-server)
-  :hook (prog-mode . copilot-mode))
+  :hook (prog-mode . copilot-mode)
+  )
 
-(use-package copilot-chat :ensure t)
+
+
+
+(use-package copilot-chat
+  :ensure t
+  :config
+  (defvar my-copilot-map (make-sparse-keymap))
+  (global-set-key (kbd "C-c a") my-copilot-map)
+  (define-key my-copilot-map (kbd "i") #'copilot-chat-ask-and-insert)
+)
 
 ;;; vterm
 
@@ -484,15 +519,20 @@ BL=general (*scratch*)"
   (define-key my-other-map (kbd "t") #'vterm)
   )
 
-;; my templates
+;;; My capture org template
+
+(elpaca (capture-org-template
+         :host github
+         :repo "ration/capture-org-template.el")
+  (require 'capture-org-template))
+
+;; Configure with use-package using :ensure
 (use-package capture-org-template
-  :elpaca (capture-org-template
-           :host github
-           :repo "ration/capture-org-template.el")
-  :init
-  (require 'capture-org-template)
+  :ensure t
+  :config
   (setq org-capture-templates
         (capture-org-template "~/Org/capture.org")))
+
 ;;; Swiper
 
 (use-package swiper
@@ -501,5 +541,19 @@ BL=general (*scratch*)"
   (global-set-key (kbd "C-c s") #'swiper))
 
 
+
+;;; Swagger
+
+(use-package swagg :ensure t)
+
+;;; yaml
+
+(use-package yaml-mode)
+
+;;; Load all other lisps
+
+(load-file (concat user-emacs-directory "local.el"))
+(load-file (concat user-emacs-directory "functions.el"))
+(load-file (concat user-emacs-directory "my-magit.el"))
 
 ;;; init.el ends here

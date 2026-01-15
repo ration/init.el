@@ -285,8 +285,9 @@ save it in `ffap-file-at-point-line-number' variable."
       (kill-new filename)
       (message "Copied buffer file name '%s' to the clipboard." filename))))
 
+;;; AI
 
-;;;
-
-
+;;(let ((ai-el (expand-file-name "ai.el" user-emacs-directory)))
+;;  (when (file-exists-p ai-el)
+;;    (load ai-el)))
 
