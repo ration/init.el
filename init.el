@@ -43,7 +43,7 @@
     (load (expand-file-name "elpaca-autoloads.el" repo))))
 
 ;; 1. Initialize Elpaca Queue
-(add-hook 'after-init-hook #'elpaca-process-queues)
+(add-hook 'after-hook #'elpaca-process-queues)
 (elpaca `(,@elpaca-order))
 
 ;; 2. Install/Enable use-package support
@@ -319,9 +319,31 @@
    '((package-lint-main-file . "copilot-chat.el")
      (lisp-indent-local-overrides (cond . 0) (interactive . 0))
      (checkdoc-allow-quoting-nil-and-t . t)))
- '(package-selected-packages '(copilot))
+ '(org-agenda-files
+   '("/home/lahtela/Org/Agenda/blog.org"
+     "/home/lahtela/Org/Agenda/calendar.org"
+     "/home/lahtela/Org/Agenda/chore.org"
+     "/home/lahtela/Org/Agenda/emacs.org"
+     "/home/lahtela/Org/Agenda/goodreads.org"
+     "/home/lahtela/Org/Agenda/helen.org"
+     "/home/lahtela/Org/Agenda/journal.org"
+     "/home/lahtela/Org/Agenda/koti.org"
+     "/home/lahtela/Org/Agenda/meetings.org"
+     "/home/lahtela/Org/Agenda/notes.org"
+     "/home/lahtela/Org/Agenda/one_thing.org"
+     "/home/lahtela/Org/Agenda/pareto.org"
+     "/home/lahtela/Org/Agenda/paretor.org"
+     "/home/lahtela/Org/Agenda/personal.org"
+     "/home/lahtela/Org/Agenda/projects.org"
+     "/home/lahtela/Org/Agenda/sales.org"
+     "/home/lahtela/Org/Agenda/talks.org"
+     "/home/lahtela/Org/Agenda/todo.org"
+     "/home/lahtela/Org/Agenda/todoist.org"))
+ '(package-selected-packages '(copilot copilot-chat))
  '(package-vc-selected-packages
-   '((copilot :url "https://github.com/copilot-emacs/copilot.el" :branch
+   '((copilot-chat :url "/home/lahtela/git/github/copilot-chat.el"
+		   :branch "main")
+     (copilot :url "/home/lahtela/git/github/copilot.el" :branch
 	      "main")))
  '(safe-local-variable-values
    '((swagg-definitions
@@ -332,6 +354,7 @@
 	      (Content-Type . "application/json")
 	      (Accept . "application/json") (another-header . "value"))))
      (eval outline-hide-sublevels 1) (chore-backend . "azure-devops")))
+ '(warning-suppress-log-types '((elpaca core stale 30.2.50)))
  '(warning-suppress-types '((use-package))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
@@ -366,7 +389,7 @@
 ;;; Terraform
 
 (use-package terraform-mode :ensure t
-  :hook (terraform-mode . lsp-mode))
+  :hook (terraform-mode . lsp))
 
 (with-eval-after-load 'lsp-mode
   (add-to-list 'lsp-language-id-configuration
@@ -405,30 +428,30 @@
 ;;; window layouts
 (winner-mode 1)
 
-(use-package window-purpose
-  :ensure t
-  :init
-  (purpose-mode)
-  :config
-  (setq purpose-user-mode-purposes
-      '((prog-mode . edit)
-        (text-mode . edit)
-        (magit-status-mode . edit)
-	(org-mode  . doc)
-        (help-mode . doc)
-        (messages-buffer-mode . logs)
-        (magit-process-mode . logs)
-        (compilation-mode . logs)))
-
-  (setq purpose-user-regexp-purposes
-	'(("^\\*[hH]elp\\*$" . docs)
-          ("^\\*[cC]hat\\*$" . docs)
-          ("^\\*[Ee]rror\\*$" . logs)
-	  ("^\\*[Ww]arn\\*$" . logs)
-          ("^\\*Messages\\*$" . logs)))
-  (setq purpose-use-default-configuration t)
-  (purpose-compile-user-configuration))
-
+;; (use-package window-purpose
+;;   :ensure t
+;;   :init
+;;   (purpose-mode)
+;;   :config
+;;   (setq purpose-user-mode-purposes
+;;       '((prog-mode . edit)
+;;         (text-mode . edit)
+;;         (magit-status-mode . edit)
+;; 	(org-mode  . doc)
+;;         (help-mode . doc)
+;;         (messages-buffer-mode . logs)
+;;         (magit-process-mode . logs)
+;;         (compilation-mode . logs)))
+;; 
+;;   (setq purpose-user-regexp-purposes
+;; 	'(("^\\*[hH]elp\\*$" . docs)
+;;           ("^\\*[cC]hat\\*$" . docs)
+;;           ("^\\*[Ee]rror\\*$" . logs)
+;; 	  ("^\\*[Ww]arn\\*$" . logs)
+;;           ("^\\*Messages\\*$" . logs)))
+;;   (setq purpose-use-default-configuration t)
+;;   (purpose-compile-user-configuration))
+;; 
 
 ;;purpose-user-mode-purposes
 
@@ -485,7 +508,8 @@ BL=general (*scratch*)"
 (use-package no-littering
   :ensure t
   :init (setq auto-save-file-name-transforms
-                `((".*" ,(no-littering-expand-var-file-name "auto-save/") t)))
+              `((".*" ,(no-littering-expand-var-file-name "auto-save/") t)))
+  (require 'recentf)
   (add-to-list 'recentf-exclude no-littering-var-directory)
   (add-to-list 'recentf-exclude no-littering-etc-directory))
 ;;; AI
@@ -494,7 +518,7 @@ BL=general (*scratch*)"
   :ensure t)
 (use-package copilot
   :ensure t
-  :vc (:url "https://github.com/copilot-emacs/copilot.el"
+  :vc (:url "/home/lahtela/git/github/copilot.el"
             :rev :newest
             :branch "main")
   :after (copilot-install-server)
@@ -506,6 +530,9 @@ BL=general (*scratch*)"
 
 (use-package copilot-chat
   :ensure t
+  :vc (:url "/home/lahtela/git/github/copilot-chat.el"
+            :rev :newest
+            :branch "master")
   :config
   (defvar my-copilot-map (make-sparse-keymap))
   (global-set-key (kbd "C-c a") my-copilot-map)
@@ -524,14 +551,10 @@ BL=general (*scratch*)"
 (elpaca (capture-org-template
          :host github
          :repo "ration/capture-org-template.el")
-  (require 'capture-org-template))
-
-;; Configure with use-package using :ensure
-(use-package capture-org-template
-  :ensure t
-  :config
+  (require 'capture-org-template)
   (setq org-capture-templates
         (capture-org-template "~/Org/capture.org")))
+
 
 ;;; Swiper
 
@@ -548,7 +571,7 @@ BL=general (*scratch*)"
 
 ;;; yaml
 
-(use-package yaml-mode)
+(use-package yaml-mode :ensure t)
 
 ;;; Load all other lisps
 
@@ -556,4 +579,13 @@ BL=general (*scratch*)"
 (load-file (concat user-emacs-directory "functions.el"))
 (load-file (concat user-emacs-directory "my-magit.el"))
 
+
+;;; Dashboard
+
+(use-package dashboard
+  :ensure t
+  :config
+  (dashboard-setup-startup-hook))
+;;;
+(elpaca-wait)
 ;;; init.el ends here
