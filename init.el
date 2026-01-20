@@ -339,9 +339,12 @@
      "/home/lahtela/Org/Agenda/talks.org"
      "/home/lahtela/Org/Agenda/todo.org"
      "/home/lahtela/Org/Agenda/todoist.org"))
- '(package-selected-packages '(copilot copilot-chat))
+ '(package-selected-packages '(capture-org-template copilot copilot-chat))
  '(package-vc-selected-packages
-   '((copilot-chat :url "/home/lahtela/git/github/copilot-chat.el"
+   '((capture-org-template :url
+			   "https://github.com/ration/capture-org-template.el"
+			   :branch "master")
+     (copilot-chat :url "/home/lahtela/git/github/copilot-chat.el"
 		   :branch "main")
      (copilot :url "/home/lahtela/git/github/copilot.el" :branch
 	      "main")))
@@ -548,13 +551,15 @@ BL=general (*scratch*)"
 
 ;;; My capture org template
 
-(elpaca (capture-org-template
-         :host github
-         :repo "ration/capture-org-template.el")
-  (require 'capture-org-template)
+(elpaca
+  (capture-org-template
+   :repo "ration/capture-org-template.el"))
+
+(use-package capture-org-template
+  :after org
+  :config
   (setq org-capture-templates
         (capture-org-template "~/Org/capture.org")))
-
 
 ;;; Swiper
 
@@ -586,6 +591,6 @@ BL=general (*scratch*)"
   :ensure t
   :config
   (dashboard-setup-startup-hook))
-;;;
+;;; Elpacaa wi
 (elpaca-wait)
 ;;; init.el ends here
