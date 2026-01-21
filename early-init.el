@@ -1,4 +1,6 @@
 ;;; Hide 
+(setq custom-file "~/.emacs.d/custom.el")
+
 (push '(tool-bar-lines . 0) default-frame-alist)
 (push '(menu-bar-lines . 0) default-frame-alist)
 (push '(vertical-scroll-bars) default-frame-alist)

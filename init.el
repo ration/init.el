@@ -307,64 +307,6 @@
 
 ;; Bind it globally so it works in Python and Elisp
 (global-set-key (kbd "<tab>") #'my/smart-tab)
-(custom-set-variables
- ;; custom-set-variables was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(custom-safe-themes
-   '("c3076fdee603e9768817cfe8dbf6253d5b3cf3bf4602cb32fa2f1df62fe70b1c"
-     default))
- '(ignored-local-variable-values
-   '((package-lint-main-file . "copilot-chat.el")
-     (lisp-indent-local-overrides (cond . 0) (interactive . 0))
-     (checkdoc-allow-quoting-nil-and-t . t)))
- '(org-agenda-files
-   '("/home/lahtela/Org/Agenda/blog.org"
-     "/home/lahtela/Org/Agenda/calendar.org"
-     "/home/lahtela/Org/Agenda/chore.org"
-     "/home/lahtela/Org/Agenda/emacs.org"
-     "/home/lahtela/Org/Agenda/goodreads.org"
-     "/home/lahtela/Org/Agenda/helen.org"
-     "/home/lahtela/Org/Agenda/journal.org"
-     "/home/lahtela/Org/Agenda/koti.org"
-     "/home/lahtela/Org/Agenda/meetings.org"
-     "/home/lahtela/Org/Agenda/notes.org"
-     "/home/lahtela/Org/Agenda/one_thing.org"
-     "/home/lahtela/Org/Agenda/pareto.org"
-     "/home/lahtela/Org/Agenda/paretor.org"
-     "/home/lahtela/Org/Agenda/personal.org"
-     "/home/lahtela/Org/Agenda/projects.org"
-     "/home/lahtela/Org/Agenda/sales.org"
-     "/home/lahtela/Org/Agenda/talks.org"
-     "/home/lahtela/Org/Agenda/todo.org"
-     "/home/lahtela/Org/Agenda/todoist.org"))
- '(package-selected-packages '(capture-org-template copilot copilot-chat))
- '(package-vc-selected-packages
-   '((capture-org-template :url
-			   "https://github.com/ration/capture-org-template.el"
-			   :branch "master")
-     (copilot-chat :url "/home/lahtela/git/github/copilot-chat.el"
-		   :branch "main")
-     (copilot :url "/home/lahtela/git/github/copilot.el" :branch
-	      "main")))
- '(safe-local-variable-values
-   '((swagg-definitions
-      (:name "ODL" :json
-	     "/home/lahtela/git/Helen/odl/api/apidoc/apidoc.json"
-	     :base "https://localhost:8000" :header-all
-	     ((token . "12345") (Cache-Control . "no-cache")
-	      (Content-Type . "application/json")
-	      (Accept . "application/json") (another-header . "value"))))
-     (eval outline-hide-sublevels 1) (chore-backend . "azure-devops")))
- '(warning-suppress-log-types '((elpaca core stale 30.2.50)))
- '(warning-suppress-types '((use-package))))
-(custom-set-faces
- ;; custom-set-faces was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- )
 
 
 ;; Project.el
@@ -547,6 +489,7 @@ BL=general (*scratch*)"
 (use-package vterm :ensure t
   :init
   (define-key my-other-map (kbd "t") #'vterm)
+  (add-to-list 'vterm-eval-cmds '("update-pwd" (lambda (path) (setq default-directory path))))
   )
 
 ;;; My capture org template
