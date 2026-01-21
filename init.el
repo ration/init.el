@@ -506,10 +506,9 @@ BL=general (*scratch*)"
 ;;; vterm
 
 (use-package vterm :ensure t
-  :init
+  :config
   (define-key my-other-map (kbd "t") #'vterm)
-  (add-to-list 'vterm-eval-cmds '("update-pwd" (lambda (path) (setq default-directory path))))
-  )
+  (add-to-list 'vterm-eval-cmds '("update-pwd" (lambda (path) (setq default-directory path)))))
 
 ;;; My capture org template
 
