@@ -143,6 +143,19 @@
   :hook
   (emacs-lisp-mode . rainbow-delimiters-mode)
   (python-mode . rainbow-delimiters-mode))
+;;; Indentation guides
+
+(use-package outline-indent :ensure t)
+
+(use-package indent-bars
+  :ensure t
+  :commands indent-bars-mode
+  :hook ((yaml-mode . indent-bars-mode)
+         (yaml-ts-mode . indent-bars-mode)
+         (python-mode . indent-bars-mode)
+         (python-ts-mode . indent-bars-mode))
+  :custom
+  (indent-bars-prefer-character t))
 
 ;;; (Ma)git
 
@@ -218,7 +231,10 @@
   (setq org-agenda-files 
         (directory-files-recursively org-directory "\\.org$")))
 
+;;; org-modern
 
+(use-package org-modern :ensure t
+  :hook (org-mode . org-modern-mode))
 
 ;;; Recent Files (Recentf)
 (use-package recentf
@@ -257,6 +273,9 @@
 
 (load-file (concat user-emacs-directory "python.el"))
 
+;;; Avy
+
+(use-package avy :ensure t)
 
 ;;; Cape
 
