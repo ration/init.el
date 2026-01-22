@@ -541,10 +541,10 @@ BL=general (*scratch*)"
 
 ;;; git-auto-save
 
-(use-package git-auto-commit-mode :ensure t
-  :config
-  (setq gac-automatically-push-p t)
-  )
+;;(use-package git-auto-commit-mode :ensure t
+;;  :config
+;;  (setq gac-automatically-push-p t)
+;;  )
 
 ;;; Load all other lisps
 
@@ -555,10 +555,10 @@ BL=general (*scratch*)"
 
 
 ;;; Elpacaa wi
-(elpaca-wait)
 ;;; Dashboard
 (use-package dashboard
   :ensure t
   :config
   (dashboard-setup-startup-hook))
+(elpaca-wait)
 ;;; init.el ends here
