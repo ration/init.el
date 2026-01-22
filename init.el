@@ -539,6 +539,10 @@ BL=general (*scratch*)"
 
 (use-package yaml-mode :ensure t)
 
+;;; git-auto-save
+
+(use-package git-auto-commit-mode :ensure t)
+
 ;;; Load all other lisps
 
 (load-file (concat user-emacs-directory "local.el"))
@@ -546,12 +550,12 @@ BL=general (*scratch*)"
 (load-file (concat user-emacs-directory "my-magit.el"))
 
 
-;;; Dashboard
 
+;;; Elpacaa wi
+(elpaca-wait)
+;;; Dashboard
 (use-package dashboard
   :ensure t
   :config
   (dashboard-setup-startup-hook))
-;;; Elpacaa wi
-(elpaca-wait)
 ;;; init.el ends here
