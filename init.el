@@ -541,7 +541,10 @@ BL=general (*scratch*)"
 
 ;;; git-auto-save
 
-(use-package git-auto-commit-mode :ensure t)
+(use-package git-auto-commit-mode :ensure t
+  :config
+  (setq gac-automatically-push-p t)
+  )
 
 ;;; Load all other lisps
 
