@@ -1,6 +1,6 @@
 ;; TEMP STUFF
 
-(setq debug-on-quit t)
+(setq debug-on-quit nil)
 
 ;;; Hide 
 (setq custom-file "~/.emacs.d/custom.el")
