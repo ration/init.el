@@ -216,7 +216,7 @@
 ;; Random packages
 
 (use-package ace-window :ensure t)
-
+(use-package toml-mode :ensure t)
 ;;; Org Mode
 
 (use-package org
@@ -541,10 +541,10 @@ BL=general (*scratch*)"
 
 ;;; git-auto-save
 
-;;(use-package git-auto-commit-mode :ensure t
-;;  :config
-;;  (setq gac-automatically-push-p t)
-;;  )
+(use-package git-auto-commit-mode :ensure t
+  :config
+  (setq gac-automatically-push-p t)
+  )
 
 ;;; Load all other lisps
 
