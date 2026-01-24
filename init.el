@@ -231,6 +231,18 @@
   (setq org-agenda-files 
         (directory-files-recursively org-directory "\\.org$")))
 
+;;; org-gtasks
+
+(elpaca
+  (org-gtasks
+   :repo "https://git.sr.ht/~jmasson/org-gtasks"))
+
+(use-package org-gtasks
+  :after org)
+
+https://git.sr.ht/~jmasson/org-gtasks
+(use-package org-gtasks :ensure t)
+
 ;;; org-modern
 
 (use-package org-modern :ensure t
