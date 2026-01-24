@@ -1,4 +1,4 @@
-;;; init.el --- My emacs init file  -*- lexical-binding: t; no-byte-compile: t; eval: (outline-minor-mode 1); eval: (outline-hide-sublevels 1); -*-
+c;;; init.el --- My emacs init file  -*- lexical-binding: t; no-byte-compile: t; eval: (outline-minor-mode 1); eval: (outline-hide-sublevels 1); -*-
 ;;; Commentary:
 ;;; Emacs configuration in outline blocks, uses elpaca
 ;;; Code:
