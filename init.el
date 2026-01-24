@@ -233,6 +233,9 @@
 
 ;;; org-gtasks
 
+(use-package deferred :ensure t)
+(use-package request :ensure t)
+
 (elpaca
   (org-gtasks
    :repo "https://git.sr.ht/~jmasson/org-gtasks"))
