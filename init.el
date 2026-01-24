@@ -235,7 +235,11 @@
 
 (use-package deferred :ensure t)
 
-(use-package request :ensure t)
+(use-package request
+  :ensure t
+  :after deferred  ; Ensures the dependency 'deferred' is loaded first
+  :config
+  (require 'request-deferred))
 
 
 (elpaca
