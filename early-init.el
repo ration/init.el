@@ -19,3 +19,11 @@
 (setq x-gtk-use-system-tooltips nil)
 
 (setq gc-cons-threshold 100000000) ;; 100MB
+
+
+(defun my-allow-dir-locals-p (file)
+  "Return non-nil if FILE is within a trusted directory."
+  (let ((trusted-dir (expand-file-name "~/.emacs.d/")))
+    (string-prefix-p trusted-dir (expand-file-name file))))
+
+(advice-add 'save-util-local-variables-check-safe :before-until #'my-allow-dir-locals-p)
