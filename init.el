@@ -571,6 +571,11 @@ BL=general (*scratch*)"
   (setq gac-automatically-push-p t)
   )
 
+
+;;; Elpacaa
+
+(elpaca-wait)
+
 ;;; Load all other lisps
 
 (load-file (concat user-emacs-directory "local.el"))
@@ -578,8 +583,6 @@ BL=general (*scratch*)"
 (load-file (concat user-emacs-directory "my-magit.el"))
 
 
-
-;;; Elpacaa wi
 ;;; Dashboard
 (use-package dashboard
   :ensure t
