@@ -585,5 +585,4 @@ BL=general (*scratch*)"
   :ensure t
   :config
   (dashboard-setup-startup-hook))
-(elpaca-wait)
 ;;; init.el ends here
