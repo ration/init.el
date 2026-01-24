@@ -5,7 +5,6 @@
 
 ;;; Elpaca Bootstrap
 
-
 (defvar elpaca-installer-version 0.11)
 (defvar elpaca-directory (expand-file-name "elpaca/" user-emacs-directory))
 (defvar elpaca-builds-directory (expand-file-name "builds/" elpaca-directory))
@@ -490,7 +489,9 @@ BL=general (*scratch*)"
               `((".*" ,(no-littering-expand-var-file-name "auto-save/") t)))
   (require 'recentf)
   (add-to-list 'recentf-exclude no-littering-var-directory)
-  (add-to-list 'recentf-exclude no-littering-etc-directory))
+  (add-to-list 'recentf-exclude no-littering-etc-directory)
+  (no-littering-theme-backups))
+
 ;;; QML
 
 (use-package qml-mode
