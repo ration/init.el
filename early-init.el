@@ -21,9 +21,13 @@
 (setq gc-cons-threshold 100000000) ;; 100MB
 
 
-(defun my-allow-dir-locals-p (file)
-  "Return non-nil if FILE is within a trusted directory."
-  (let ((trusted-dir (expand-file-name "~/.emacs.d/")))
-    (string-prefix-p trusted-dir (expand-file-name file))))
+(defun my-allow-dir-locals-p (&rest _args)
+  "Return t if the current buffer is within a trusted directory to bypass prompts."
+  (let ((trusted-dir (expand-file-name "~/.emacs.d/"))
+        (current-path (and buffer-file-name (file-truename buffer-file-name))))
+    (when current-path
+      (string-prefix-p (file-truename trusted-dir) current-path))))
 
-(advice-add 'save-util-local-variables-check-safe :before-until #'my-allow-dir-locals-p)
+;; We use :before-until so if our function returns t, 
+;; the original prompt function is skipped.
+(advice-add 'hack-local-variables-confirm :before-until #'my-allow-dir-locals-p)
