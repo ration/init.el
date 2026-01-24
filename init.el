@@ -579,9 +579,7 @@ BL=general (*scratch*)"
 
 ;;; Load all other lisps
 
-(add-hook 'elpaca-after-init-hook
-          (lambda ()
-            (load-file (concat user-emacs-directory "local.el"))
-            (load-file (concat user-emacs-directory "functions.el"))
-            (load-file (concat user-emacs-directory "my-magit.el"))))
+(load-file (concat user-emacs-directory "local.el"))
+(load-file (concat user-emacs-directory "functions.el"))
+(load-file (concat user-emacs-directory "my-magit.el"))
 ;;; init.el ends here
