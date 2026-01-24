@@ -237,11 +237,7 @@
   (org-gtasks
    :repo "https://git.sr.ht/~jmasson/org-gtasks"))
 
-(use-package org-gtasks
-  :after org)
-
-https://git.sr.ht/~jmasson/org-gtasks
-(use-package org-gtasks :ensure t)
+(use-package org-gtasks)
 
 ;;; org-modern
 
