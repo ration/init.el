@@ -291,3 +291,17 @@ save it in `ffap-file-at-point-line-number' variable."
 ;;  (when (file-exists-p ai-el)
 ;;    (load ai-el)))
 
+
+
+;;; Gtasks
+
+(defun my-org-gtasks-sync-all ()
+  "Synchronize all accounts registered in `org-gtasks-accounts`."
+  (interactive)
+  (if (boundp 'org-gtasks-accounts)
+      (let ((accounts (mapcar #'car org-gtasks-accounts)))
+        (dolist (account accounts)
+          (message "Syncing Google Tasks account: %s..." account)
+          (org-gtasks-sync account))
+        (message "All Google Tasks accounts synchronized."))
+    (error "org-gtasks-accounts is not defined. Is org-gtasks loaded?")))
