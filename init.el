@@ -284,7 +284,8 @@
 
 ;;; Avy
 
-(use-package avy :ensure t)
+;; Already loadd by ace-jump
+;; (use-package avy :ensure t) 
 
 ;;; Cape
 
