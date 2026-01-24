@@ -583,6 +583,6 @@ BL=general (*scratch*)"
 ;;; Dashboard
 (use-package dashboard
   :ensure t
-  :config
-  (dashboard-setup-startup-hook))
+  :hook
+  (after-elpaca-init-hook . dashboard-setup-startup-hook))
 ;;; init.el ends here
