@@ -300,6 +300,6 @@ save it in `ffap-file-at-point-line-number' variable."
   (interactive)
   (if (and (boundp 'org-gtasks-accounts) (listp org-gtasks-accounts))
       (dolist (account org-gtasks-accounts)
-	(
+	(org-gtasks-pull account))))
 
 
