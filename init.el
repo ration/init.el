@@ -578,7 +578,7 @@ BL=general (*scratch*)"
 (elpaca-wait)
 
 ;;; Load all other lisps
-
+(elpaca-wait)
 (load-file (concat user-emacs-directory "local.el"))
 (load-file (concat user-emacs-directory "functions.el"))
 (load-file (concat user-emacs-directory "my-magit.el"))
