@@ -569,6 +569,12 @@ BL=general (*scratch*)"
   )
 
 
+;;; Dashboard
+(use-package dashboard
+  :ensure t
+  :hook
+  (after-elpaca-init-hook . dashboard-setup-startup-hook))
+
 ;;; Elpacaa
 
 (elpaca-wait)
@@ -580,9 +586,4 @@ BL=general (*scratch*)"
 (load-file (concat user-emacs-directory "my-magit.el"))
 
 
-;;; Dashboard
-(use-package dashboard
-  :ensure t
-  :hook
-  (after-elpaca-init-hook . dashboard-setup-startup-hook))
 ;;; init.el ends here
