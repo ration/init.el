@@ -237,7 +237,7 @@
 (elpaca
   (org-gtasks
    :repo "https://git.sr.ht/~jmasson/org-gtasks"))
-
+(elpaca-wait)
 (use-package org-gtasks)
 
 ;;; org-modern
