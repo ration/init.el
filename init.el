@@ -535,7 +535,7 @@ BL=general (*scratch*)"
 (elpaca
   (capture-org-template
    :repo "ration/capture-org-template.el"))
-
+(elpaca-wait)
 (use-package capture-org-template
   :after org
   :config
