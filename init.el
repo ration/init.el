@@ -163,9 +163,6 @@
 (use-package transient
   :ensure t)
 
-;; 2. Tell Elpaca to wait until Transient is actually finished 
-(elpaca-wait)
-
 ;; 3. Now install Magit
 (use-package magit
   :ensure t
