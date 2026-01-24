@@ -295,13 +295,24 @@ save it in `ffap-file-at-point-line-number' variable."
 
 ;;; Gtasks
 
+
 (defun my-org-gtasks-sync-all ()
   "Synchronize all accounts registered in `org-gtasks-accounts`."
   (interactive)
-  (if (boundp 'org-gtasks-accounts)
-      (let ((accounts (mapcar #'car org-gtasks-accounts)))
-        (dolist (account accounts)
-          (message "Syncing Google Tasks account: %s..." account)
-          (org-gtasks-sync account))
-        (message "All Google Tasks accounts synchronized."))
-    (error "org-gtasks-accounts is not defined. Is org-gtasks loaded?")))
+  (cond
+   ;; Case 1: It's a Hash Table (common in newer versions)
+   ((hash-table-p org-gtasks-accounts)
+    (maphash (lambda (key _value)
+               (message "Syncing Google Tasks account: %s..." key)
+               (org-gtasks-sync key))
+             org-gtasks-accounts)
+    (message "All Google Tasks accounts synchronized."))
+
+   ;; Case 2: It's a standard List
+   ((listp org-gtasks-accounts)
+    (dolist (account (mapcar #'car org-gtasks-accounts))
+      (message "Syncing Google Tasks account: %s..." account)
+      (org-gtasks-sync account))
+    (message "All Google Tasks accounts synchronized."))
+
+   (t (error "Unknown format for org-gtasks-accounts"))))
