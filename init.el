@@ -90,6 +90,7 @@
 (global-set-key (kbd "C-c j s") 'scratch)
 (global-set-key (kbd "C-c j g") 'goto-line)
 (global-set-key (kbd "C-c j n") 'flycheck-next-error)
+(global-set-key (kbd "C-c j e") 'next-error)
 (global-set-key (kbd "C-c b") 'bufler)
 (global-set-key (kbd "C-x b") 'switch-to-buffer)
 (global-set-key (kbd "M-z") 'zap-up-to-char)
