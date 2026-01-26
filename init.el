@@ -519,6 +519,7 @@ BL=general (*scratch*)"
             :rev :newest
             :branch "master")
   :config
+  (setq copilot-chat-default-model "gpt-5.2-codex")
   (defvar my-copilot-map (make-sparse-keymap))
   (global-set-key (kbd "C-c a") my-copilot-map)
   (define-key my-copilot-map (kbd "i") #'copilot-chat-ask-and-insert)
