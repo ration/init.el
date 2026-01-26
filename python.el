@@ -62,23 +62,26 @@
   (pyvenv-mode 1))
 
 ;; 3. LSP Support (Pyright & Ruff)
-
 (use-package lsp-mode
   :ensure t
   :custom
-  (lsp-completion-provider :none) ;; Stop lsp-mode from looking for company
+  (lsp-completion-provider :none)
   :init
   (setq lsp-keymap-prefix "C-c l")
-  (define-key lsp-mode-map (kbd "e") #'flycheck-next-error)
+  :bind
+  (:map lsp-command-map
+        ("e" . flycheck-next-error))
+  :hook
+  (lsp-completion-mode . my/lsp-mode-setup-completion)
+  :config
   (defun my/lsp-mode-setup-completion ()
-  "Set up completion using the correct Cape function."
-  (require 'cape) ; Ensure the functions are loaded
-  (setq-local completion-at-point-functions
-              (list (cape-capf-super  ;; <--- Fixed name
-                     #'lsp-completion-at-point
-                     #'cape-file
-                     #'cape-dabbrev))))
-  :hook (lsp-completion-mode . my/lsp-mode-setup-completion))
+    "Set up completion using the correct Cape function."
+    (require 'cape)
+    (setq-local completion-at-point-functions
+                (list (cape-capf-super
+                       #'lsp-completion-at-point
+                       #'cape-file
+                       #'cape-dabbrev)))))
 
 ;; 4. Specific Ruff Integration (Formatting/Linting)
 (use-package lsp-pyright
