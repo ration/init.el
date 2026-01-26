@@ -20,6 +20,19 @@
 
 (setq gc-cons-threshold 100000000) ;; 100MB
 
+(defvar my-trusted-dir-locals
+  (list (expand-file-name "~/.emacs.d/")
+        (expand-file-name "~/git/Helen/odl")
+  "List of trusted directories for dir-locals."))
+
+(defun my-allow-dir-locals-p (&rest _args)
+  "Return t if the current buffer is within a trusted directory to bypass prompts."
+  (let ((current-path (and buffer-file-name (file-truename buffer-file-name))))
+    (when current-path
+      (seq-some (lambda (dir)
+                  (string-prefix-p (file-truename dir) current-path))
+                my-trusted-dir-locals))))
+
 
 (defun my-allow-dir-locals-p (&rest _args)
   "Return t if the current buffer is within a trusted directory to bypass prompts."
