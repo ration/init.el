@@ -62,6 +62,14 @@
   (pyvenv-mode 1))
 
 ;; 3. LSP Support (Pyright & Ruff)
+
+(defun my-python-import-under-cursor ()
+  "Import symbol under cursor"
+  (interactive)
+  (let ((name (thing-at-point 'symbol t)))
+  (when name
+    (python-add-import name))))
+
 (use-package lsp-mode
   :ensure t
   :custom
@@ -70,7 +78,9 @@
   (setq lsp-keymap-prefix "C-c l")
   :bind
   (:map lsp-command-map
-        ("e" . flycheck-next-error))
+        ("e" . flycheck-next-error)
+	("i" . my-python-import-under-cursor)
+	)
   :hook
   (lsp-completion-mode . my/lsp-mode-setup-completion)
   :config
