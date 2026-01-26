@@ -69,6 +69,7 @@
   (lsp-completion-provider :none) ;; Stop lsp-mode from looking for company
   :init
   (setq lsp-keymap-prefix "C-c l")
+  (define-key lsp-mode-map (kbd "e") #'flycheck-next-error)
   (defun my/lsp-mode-setup-completion ()
   "Set up completion using the correct Cape function."
   (require 'cape) ; Ensure the functions are loaded
