@@ -490,6 +490,15 @@ BL=general (*scratch*)"
   (require 'recentf)
   (add-to-list 'recentf-exclude no-littering-var-directory)
   (add-to-list 'recentf-exclude no-littering-etc-directory))
+;;; QML
+
+(use-package qml-mode
+  :elpaca t
+  :mode "\\.qml\\'"
+  :config
+  ;; This block only runs AFTER you open a .qml file
+  (setq qml-basic-offset 4))
+
 ;;; AI
 
 (use-package track-changes
