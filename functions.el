@@ -304,31 +304,37 @@ save it in `ffap-file-at-point-line-number' variable."
 
 
 
-(defadvice my-try-sudo-save (around fix-unwritable-save-with-sudo activate)
-  "When we save a buffer which is write-protected, try to sudo-save it.
+(define-advice my-try-sudo-save-buffer (:around (orig-fun &rest args) try-sudo-save)
+  "If the file is owned by root or not writable, try to save with sudo."
+  (let* ((filename (buffer-file-name))
+         ;; Check if file exists and is owned by root (UID 0)
+         (is-root-owned (and filename
+                             (file-exists-p filename)
+                             (zerop (file-attribute-user-id (file-attributes filename))))))
 
-When the buffer is write-protected it is usually opened in
-read-only mode.  Use \\[read-only-mode] to toggle
-`read-only-mode', make your changes and \\[save-buffer] to save.
-Emacs will warn you that the buffer is write-protected and asks
-you to confirm if you really want to save.  If you answer yes,
-Emacs will use sudo tramp method to save the file and then
-reverts it, making it read-only again.  The buffer stays
-associated with the original non-sudo filename."
-  (condition-case err
-      (progn
-        ad-do-it)
-    (file-error
-     (when (string-prefix-p
-            "Doing chmod: operation not permitted"
-            (error-message-string err))
-       (let ((old-buffer-file-name buffer-file-name)
-             (success nil))
-         (unwind-protect
-             (progn
-               (setq buffer-file-name (concat "/sudo::" buffer-file-name))
-               (save-buffer)
-               (setq success t))
-           (setq buffer-file-name old-buffer-file-name)
-           (when success
-             (revert-buffer t t))))))))
+    (if (and filename
+             ;; Trigger if: Root owned OR Not writable
+             (or is-root-owned (not (file-writable-p filename)))
+             ;; Safety: Don't trigger if already remote (to avoid recursion)
+             (not (file-remote-p filename)))
+
+        ;; --- Sudo Save Logic ---
+        (let ((old-buffer-file-name buffer-file-name)
+              (success nil))
+          (unwind-protect
+              (progn
+                ;; Temporarily change filename to TRAMP sudo path
+                (setq buffer-file-name (concat "/sudo::" filename))
+                ;; Call the original save-buffer function
+                (apply orig-fun args)
+                (setq success t))
+            
+            ;; Cleanup: Restore filename
+            (setq buffer-file-name old-buffer-file-name)
+            ;; Revert buffer to update read-only status and permissions
+            (when success
+              (revert-buffer t t))))
+
+      ;; --- Normal Save Logic ---
+      ;; If not root/protected, just run the original function normally
+      (apply orig-fun args))))
