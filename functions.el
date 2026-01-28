@@ -304,7 +304,7 @@ save it in `ffap-file-at-point-line-number' variable."
 
 
 
-(define-advice my-try-sudo-save-buffer (:around (orig-fun &rest args) try-sudo-save)
+(define-advice basic-save-buffer-2 (:around (orig-fun &rest args) try-sudo-save)
   "If the file is owned by root or not writable, try to save with sudo."
   (let* ((filename (buffer-file-name))
          ;; Check if file exists and is owned by root (UID 0)
