@@ -5,6 +5,7 @@
 
 ;;; Elpaca Bootstrap
 
+
 (defvar elpaca-installer-version 0.11)
 (defvar elpaca-directory (expand-file-name "elpaca/" user-emacs-directory))
 (defvar elpaca-builds-directory (expand-file-name "builds/" elpaca-directory))
@@ -50,7 +51,7 @@
 (elpaca elpaca-use-package
   (elpaca-use-package-mode)
   (setq elpaca-use-package-always-ensure t))
-
+(setq elpaca-use-package-quiet t)
 (elpaca-wait)
 
 
