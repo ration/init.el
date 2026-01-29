@@ -61,9 +61,6 @@
   (setq pyvenv-mode-line-indicator '(pyvenv-virtual-env-name ("[venv:" v " ] ")))
   (pyvenv-mode 1))
 
-(add-hook 'python-mode-hook #'my/python-auto-venv-workon 0)
-(add-hook 'python-mode-hook #'lsp-deferred 10)
-
 
 ;; 3. LSP Support (Pyright & Ruff)
 
@@ -136,3 +133,17 @@
 
 (define-key my-jump-map (kbd "d") #'lsp-find-definition)
 (define-key my-jump-map (kbd "u") #'lsp-find-references)
+
+(remove-hook 'python-mode-hook #'lsp-deferred)
+
+(defun my/python-venv-then-lsp ()
+  "Activate project .venv first, then start LSP."
+  (my/python-auto-venv-workon)
+  ;; Ensure environment variables are applied before LSP starts
+  (run-with-idle-timer
+   0 nil
+   (lambda ()
+     (when (bound-and-true-p pyvenv-virtual-env)
+       (lsp-deferred)))))
+
+(add-hook 'python-mode-hook #'my/python-venv-then-lsp)
