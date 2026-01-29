@@ -20,7 +20,7 @@
     (when-let* ((proj (project-current))
                 (root (project-root proj))
                 (venv-path (expand-file-name ".venv" root)))
-      (message "activating? %s venv-path")
+      (message "activating? %s" venv-path")
       (when (file-directory-p venv-path)
 	(message "Activating %s" venv-path)
         (pyvenv-activate venv-path))))
