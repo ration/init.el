@@ -1,6 +1,9 @@
 ;;; init.el --- My emacs init file  -*- lexical-binding: t; no-byte-compile: t; eval: (outline-minor-mode 1); eval: (outline-hide-sublevels 1); -*-
 ;;; Commentary:
 ;;; Emacs configuration in outline blocks, uses elpaca
+
+(setopt use-short-answers t)
+
 ;;; Code:
 
 ;;; Elpaca Bootstrap
@@ -394,6 +397,10 @@
   (which-key-mode)
   ;; Optional: make it pop up faster (default is 1.0 second)
   (setq which-key-idle-delay 0.5))
+
+;;; yasnippet
+
+(use-package yasnippet :ensure t)
 
 ;;; RG and other file finding stuff
 
