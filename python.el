@@ -18,7 +18,8 @@
 (defun my/python-auto-venv-workon ()
   "Activate .venv using project.el's root discovery."
   (interactive)
-  (message "working on %s" (vc-root-dir))
+  (vc-refresh-state)
+  (message "working on %s" (defaut-directory))
   (when-let* ((proj (vc-root-dir)) ;; Note vc-root-dir might not be always correct, but for me it is
               (venv-path (expand-file-name ".venv" proj)))
     (message "activating? %s" venv-path)
