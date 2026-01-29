@@ -61,14 +61,8 @@
   (setq pyvenv-mode-line-indicator '(pyvenv-virtual-env-name ("[venv:" v " ] ")))
   (pyvenv-mode 1))
 
-(defun my/python-venv-then-lsp ()
-  "Activate .venv first, then start LSP."
-  (my/python-auto-venv-workon)
-  (lsp-deferred))
-
-;; Replace the existing python-mode hook
-(remove-hook 'python-mode-hook #'lsp-deferred)
-(add-hook 'python-mode-hook #'my/python-venv-then-lsp)
+(add-hook 'python-mode-hook #'my/python-auto-venv-workon 0)
+(add-hook 'python-mode-hook #'lsp-deferred 10)
 
 
 ;; 3. LSP Support (Pyright & Ruff)
