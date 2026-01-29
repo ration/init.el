@@ -12,7 +12,7 @@
   :ensure nil
   :config
   ;; Tell project.el to recognize .venv as a project marker
-  (setq project-vc-extra-root-markers '(".git" ".venv" "pyproject.toml")))
+  (setq project-vc-extra-root-markers '(".git")))
 
 ;; Updated Python venv hook using project.el
 (defun my/python-auto-venv-workon ()
