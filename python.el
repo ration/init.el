@@ -2,7 +2,7 @@
 
 (use-package python
   :ensure nil
-  :hook (python-mode . lsp-deferred) ;; If using lsp
+;;   :hook (python-mode . lsp-deferred) ;; If using lsp
   :config
   ;; Remove guess indent messages
   (setq python-indent-guess-indent-offset-verbose nil))
@@ -12,20 +12,25 @@
   :ensure nil
   :config
   ;; Tell project.el to recognize .venv as a project marker
-  (setq project-vc-extra-root-markers '(".git" ".venv" "pyproject.toml"))
-  
-  ;; Updated Python venv hook using project.el
-  (defun my/python-auto-venv-workon ()
-    "Activate .venv using project.el's root discovery."
-    (interactive)
-    (when-let* ((proj (vc-root-dir)) ;; Note vc-root-dir might not be always correct, but for me it is
-                (venv-path (expand-file-name ".venv" proj)))
-      (message "activating? %s" venv-path)
-      (when (file-directory-p venv-path)
-	(message "Activating %s" venv-path)
-        (pyvenv-activate venv-path))))
-  
-  (add-hook 'python-mode-hook #'my/python-auto-venv-workon))
+  (setq project-vc-extra-root-markers '(".git" ".venv" "pyproject.toml")))
+
+;; Updated Python venv hook using project.el
+(defun my/python-auto-venv-workon ()
+  "Activate .venv using project.el's root discovery."
+  (interactive)
+  (when-let* ((proj (vc-root-dir)) ;; Note vc-root-dir might not be always correct, but for me it is
+              (venv-path (expand-file-name ".venv" proj)))
+    (message "activating? %s" venv-path)
+    (when (file-directory-p venv-path)
+      (message "Activating %s" venv-path)
+      (pyvenv-activate venv-path))))
+
+(defun my/python-venv-then-lsp ()
+  "Activate .venv first, then start LSP."
+  (my/python-auto-venv-workon)
+  (lsp-deferred))
+
+(add-hook 'python-mode-hook #'my/python-venv-then-lsp)
 
 
 (defun my-project-find-file ()
