@@ -21,6 +21,7 @@
                 (root (project-root proj))
                 (venv-path (expand-file-name ".venv" root)))
       (when (file-directory-p venv-path)
+	(message "Activating %s" venv-path)
         (pyvenv-activate venv-path))))
   
   (add-hook 'python-mode-hook #'my/python-auto-venv-workon))
@@ -134,16 +135,3 @@
 (define-key my-jump-map (kbd "d") #'lsp-find-definition)
 (define-key my-jump-map (kbd "u") #'lsp-find-references)
 
-(remove-hook 'python-mode-hook #'lsp-deferred)
-
-(defun my/python-venv-then-lsp ()
-  "Activate project .venv first, then start LSP."
-  (my/python-auto-venv-workon)
-  ;; Ensure environment variables are applied before LSP starts
-  (run-with-idle-timer
-   0 nil
-   (lambda ()
-     (when (bound-and-true-p pyvenv-virtual-env)
-       (lsp-deferred)))))
-
-(add-hook 'python-mode-hook #'my/python-venv-then-lsp)
