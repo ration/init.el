@@ -16,8 +16,8 @@
   
   ;; Updated Python venv hook using project.el
   (defun my/python-auto-venv-workon ()
-    (interactive)
     "Activate .venv using project.el's root discovery."
+    (interactive)
     (when-let* ((proj (vc-root-dir)) ;; Note vc-root-dir might not be always correct, but for me it is
                 (venv-path (expand-file-name ".venv" proj)))
       (message "activating? %s" venv-path)
