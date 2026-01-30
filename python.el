@@ -108,6 +108,9 @@
   :ensure t
   :after lsp-mode)
 
+(use-package consult-lsp :ensure t :after lsp-mode)
+
+
 (use-package ruff-format
   :ensure t
   :hook (python-mode . ruff-format-on-save-mode))
