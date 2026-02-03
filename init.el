@@ -178,7 +178,10 @@
 (use-package vertico
   :ensure t
   :init
-  (vertico-mode))
+  (vertico-mode)
+  (require 'vertico-directory)
+  (keymap-set vertico-map "RET" #'vertico-directory-enter)
+  )
 
 ;; 2. Marginalia: Adds the "Rich Annotations" (docstrings, etc.)
 (use-package marginalia
