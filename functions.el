@@ -303,6 +303,9 @@ save it in `ffap-file-at-point-line-number' variable."
 	(org-gtasks-pull account))))
 
 
+;; (org-gtasks-request-auth (org-gtasks-find-account-by-name 'lahtela@gmail.com))
+
+;;;
 
 (define-advice basic-save-buffer-2 (:around (orig-fun &rest args) try-sudo-save)
   "If the file is owned by root or not writable, try to save with sudo."
