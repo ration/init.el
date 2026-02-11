@@ -233,7 +233,11 @@
   (setq org-startup-indented nil)
   (setq org-enforce-todo-dependencies t)
   (setq org-agenda-files 
-        (directory-files-recursively org-directory "\\.org$")))
+        (directory-files-recursively org-directory "\\.org$"))
+  (setq org-refile-use-outline-path 'file)
+  (setq org-refile-targets '((nil :maxlevel . 9)
+                                (org-agenda-files :maxlevel . 9)))
+  (setq org-outline-path-complete-in-steps nil))
 
 ;;; org-gtasks
 
@@ -401,8 +405,9 @@
 ;;; yasnippet
 
 (use-package yasnippet :ensure t)
+(use-package yasnippet-snippets :ensure t)
 
-;;; RG and other file finding stuff
+;;; RG and other file finding tsuff
 
 (use-package rg :ensure t
   :init
@@ -585,6 +590,13 @@ BL=general (*scratch*)"
   :ensure t
   :after elpaca
   :config (dashboard-setup-startup-hook))
+
+(use-package casual-suite
+  :ensure t
+  :bind (:map org-agenda-mode-map
+         ("C-o" . casual-agenda-tmenu) ; Open the Casual menu in Agenda
+         :map bookmark-bmenu-mode-map
+         ("C-o" . casual-bookmarks-tmenu)))
 
 ;;; Elpacaa
 
