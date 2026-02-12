@@ -585,10 +585,10 @@ BL=general (*scratch*)"
 
 
 ;;; Dashboard
-(use-package dashboard
-  :ensure t
-  :after elpaca
-  :config (dashboard-setup-startup-hook))
+;; (use-package dashboard
+;;   :ensure t
+;;   :after elpaca
+;;   :config (dashboard-setup-startup-hook))
 
 (use-package casual-suite
   :ensure t
@@ -599,7 +599,7 @@ BL=general (*scratch*)"
 
 ;;; Elpaca
 
-;; (elpaca-wait)
+(elpaca-wait)
 
 ;;; Load all other lisps
 
