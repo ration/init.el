@@ -609,9 +609,7 @@ BL=general (*scratch*)"
 ;;; Agenda
 
 
-(add-hook 'elpaca-after-init-hook
-          (lambda ()
-            (org-agenda nil "a")))
+(add-hook 'after-init-hook (lambda () (org-agenda nil "a")))
 
 ;;; init.el ends here
 
