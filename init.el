@@ -506,7 +506,7 @@ BL=general (*scratch*)"
 ;;; QML
 
 (use-package qml-mode
-  :elpaca t
+  :ensure t
   :mode "\\.qml\\'"
   :config
   ;; This block only runs AFTER you open a .qml file
@@ -608,7 +608,7 @@ BL=general (*scratch*)"
 (load-file (concat user-emacs-directory "my-magit.el"))
 ;;; Agenda
 
-
+(setq inhibit-startup-screen t)
 (add-hook 'after-init-hook (lambda ()
 			     (org-agenda nil "a")
                              (delete-other-windows)
