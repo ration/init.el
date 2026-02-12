@@ -62,23 +62,23 @@
 
 (use-package emacs
   :ensure nil
-  :hook (emacs-lisp-mode . outline-minor-mode)
-  :config
-  (defun my/elisp-tab-dwim ()
-    "Cycle outline if on a header, otherwise indent normally."
-    (interactive)
-    (if (save-excursion
-          (beginning-of-line)
-          (looking-at outline-regexp))
-        (outline-cycle)
-      (indent-for-tab-command)))
-
-  (add-hook 'emacs-lisp-mode-hook
-            (lambda ()
-              (setq-local outline-regexp ";;;+ ")
-              ;; Bind TAB to our smart "Do What I Mean" function
-              (local-set-key (kbd "<tab>") #'my/elisp-tab-dwim))))
-
+  :hook (emacs-lisp-mode . outline-minor-mode))
+;;   :config
+;;   (defun my/elisp-tab-dwim ()
+;;     "Cycle outline if on a header, otherwise indent normally."
+;;     (interactive)
+;;     (if (save-excursion
+;;           (beginning-of-line)
+;;           (looking-at outline-regexp))
+;;         (outline-cycle)
+;;       (indent-for-tab-command)))
+;; 
+;;   (add-hook 'emacs-lisp-mode-hook
+;;             (lambda ()
+;;               (setq-local outline-regexp ";;;+ ")
+;;               ;; Bind TAB to our smart "Do What I Mean" function
+;;               (local-set-key (kbd "<tab>") #'my/elisp-tab-dwim))))
+;; 
 
 ;;; My global keys
 
@@ -598,12 +598,12 @@ BL=general (*scratch*)"
          :map bookmark-bmenu-mode-map
          ("C-o" . casual-bookmarks-tmenu)))
 
-;;; Elpacaa
+;;; Elpaca
 
 (elpaca-wait)
 
 ;;; Load all other lisps
-(elpaca-wait)
+
 (load-file (concat user-emacs-directory "local.el"))
 (load-file (concat user-emacs-directory "functions.el"))
 (load-file (concat user-emacs-directory "my-magit.el"))
