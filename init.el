@@ -609,7 +609,10 @@ BL=general (*scratch*)"
 ;;; Agenda
 
 
-(add-hook 'after-init-hook (lambda () (org-agenda nil "a")))
+(add-hook 'after-init-hook (lambda ()
+			     (org-agenda nil "a")
+                             (delete-other-windows)
+                             (switch-to-buffer "*Org Agenda*")) 100)
 
 ;;; init.el ends here
 
