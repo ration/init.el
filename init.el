@@ -64,9 +64,9 @@
 
 (use-package emacs
   :ensure nil
-  :configl
-  (keymap-set emacs-lisp-mode-map (kbd "<tab>" #'outline-cycle)
-  :hook (emacs-lisp-mode . outline-minor-mode)));;   :config
+  :config
+  (keymap-set emacs-lisp-mode-map "TAB" #'outline-cycle)
+  :hook (emacs-lisp-mode . outline-minor-mode));;   :config
 ;;    (defun my/elisp-tab-dwim ()
 ;;      "Cycle outline if on a header, otherwise indent normally."
 ;;      (interactive)
