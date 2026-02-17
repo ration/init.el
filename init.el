@@ -8,6 +8,8 @@
 
 ;;; Elpaca Bootstrap
 
+(setq elpaca-core-date emacs-version) ;; Probably gonna break something at some point
+
 (defvar elpaca-installer-version 0.11)
 (defvar elpaca-directory (expand-file-name "elpaca/" user-emacs-directory))
 (defvar elpaca-builds-directory (expand-file-name "builds/" elpaca-directory))
@@ -345,7 +347,7 @@
 
 
 ;; Bind it globally so it works in Python and Elisp
-(global-set-key (kbd "<tab>") #'my/smart-tab)
+;; (global-set-key (kbd "<tab>") #'my/smart-tab)
 
 
 ;; Project.el
