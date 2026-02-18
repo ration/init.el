@@ -20,21 +20,22 @@
 
 (setq gc-cons-threshold 100000000) ;; 100MB
 
+;; 1. Use defconst or setq to ensure re-evaluating updates the list.
+;; 2. Fixed the parenthesis so the docstring is outside the list.
 (defvar my-trusted-dir-locals
   (list (expand-file-name "~/.emacs.d/")
-	(expand-file-name "~/Org/")
-        (expand-file-name "~/git/Helen/odl")
-  "List of trusted directories for dir-locals."))
+        (expand-file-name "~/Org/")
+        (expand-file-name "~/git/Helen/odl"))
+  "List of trusted directories for dir-locals.")
 
 (defun my-allow-dir-locals-p (&rest _args)
   "Return t if the current buffer is within a trusted directory to bypass prompts."
   (let ((current-path (and buffer-file-name (file-truename buffer-file-name))))
     (when current-path
       (seq-some (lambda (dir)
-                  (string-prefix-p (file-truename dir) current-path))
+                  ;; file-in-directory-p is more robust than string-prefix-p
+                  ;; as it handles slash normalization automatically.
+                  (file-in-directory-p current-path (file-truename dir)))
                 my-trusted-dir-locals))))
 
-;; We use :before-until so if our function returns t, 
-;; the original prompt function is skipped.
 (advice-add 'hack-local-variables-confirm :before-until #'my-allow-dir-locals-p)
-
