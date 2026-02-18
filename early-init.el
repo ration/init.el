@@ -20,9 +20,10 @@
 
 (setq gc-cons-threshold 100000000) ;; 100MB
 
-;; 1. Use defconst or setq to ensure re-evaluating updates the list.
-;; 2. Fixed the parenthesis so the docstring is outside the list.
-(defvar my-trusted-dir-locals
+
+;; We use defconst here so that if you edit this list and re-evaluate it,
+;; Emacs will actually update the variable.
+(defconst my-trusted-dir-locals
   (list (expand-file-name "~/.emacs.d/")
         (expand-file-name "~/Org/")
         (expand-file-name "~/git/Helen/odl"))
@@ -33,8 +34,7 @@
   (let ((current-path (and buffer-file-name (file-truename buffer-file-name))))
     (when current-path
       (seq-some (lambda (dir)
-                  ;; file-in-directory-p is more robust than string-prefix-p
-                  ;; as it handles slash normalization automatically.
+                  ;; file-in-directory-p is safer than string-prefix-p
                   (file-in-directory-p current-path (file-truename dir)))
                 my-trusted-dir-locals))))
 
