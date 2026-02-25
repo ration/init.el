@@ -1,5 +1,4 @@
-y;;; Hide 
-(setq custom-file "~/.emacs.d/custom.el")
+;;; Hide 
 
 (push '(tool-bar-lines . 0) default-frame-alist)
 (push '(menu-bar-lines . 0) default-frame-alist)
@@ -26,3 +25,5 @@ y;;; Hide
               '("~/.emacs.d/"
                 "~/Org/"
                 "~/git/Helen/odl/")))
+
+(setq custom-file "~/.emacs.d/custom.el")
