@@ -582,11 +582,11 @@ BL=general (*scratch*)"
 
 ;;; git-auto-save
 
-(use-package git-auto-commit-mode :ensure t
-  :config
-  (setq gac-automatically-push-p t)
-  )
-
+;;(use-package git-auto-commit-mode :ensure t
+;;  :config
+;;  (setq gac-automatically-push-p t)
+;;  )
+;;
 
 ;;; Dashboard
 ;; (use-package dashboard
