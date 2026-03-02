@@ -1,8 +1,5 @@
 ;;; Hide 
-<<<<<<< HEAD
-=======
-(setq custom-file (expand-file-name "custom.el" user-emacs-directory))
->>>>>>> 8ae22ac (gitorizer: auto-commit 2026-03-02T08:15 [early-init.el])
+(setq custom-file "~/.emacs.d/custom.el")
 
 (push '(tool-bar-lines . 0) default-frame-alist)
 (push '(menu-bar-lines . 0) default-frame-alist)
@@ -24,15 +21,9 @@
 (setq gc-cons-threshold 100000000) ;; 100MB
 
 
-(setq safe-local-variable-directories
-      (mapcar (lambda (dir) (file-name-as-directory (file-truename dir)))
-              '("~/.emacs.d/"
-                "~/Org/"
-                "~/git/Helen/odl/")))
 
-<<<<<<< HEAD
-(setq custom-file "~/.emacs.d/custom.el")
-=======
+cj;; 1. Use defconst or setq to ensure re-evaluating updates the list.
+;; 2. Fixed the parenthesis so the docstring is outside the list.
 (defvar my-trusted-dir-locals
   (list (expand-file-name "~/.emacs.d/")
         (expand-file-name "~/Org/")
@@ -49,15 +40,4 @@
                   (file-in-directory-p current-path (file-truename dir)))
                 my-trusted-dir-locals))))
 
-(setq safe-local-variable-directories
-      (delete-dups
-       (append
-        (mapcar (lambda (dir)
-                  ;; Must be absolute, expanded, and end with slash
-                  (file-name-as-directory
-                   (file-truename dir)))
-                my-trusted-dir-locals)
-        safe-local-variable-directories)))
-
 (advice-add 'hack-local-variables-confirm :before-until #'my-allow-dir-locals-p)
->>>>>>> 8ae22ac (gitorizer: auto-commit 2026-03-02T08:15 [early-init.el])
