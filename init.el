@@ -570,7 +570,26 @@ BL=general (*scratch*)"
   :config
   (global-set-key (kbd "C-c s") #'swiper))
 
+;;; EMAIL
 
+
+
+(use-package mu4easy
+  :ensure t
+  :bind ("C-c u" . mu4e)
+  :config (mu4easy-mode)
+  :custom
+  (mu4easy-contexts '((mu4easy-context
+                       :c-name  "lahtela@iki.fi"
+                       :maildir "lahtela@iki.fi"
+                       :mail    "lahtela@iki.fi"
+                       :smtp    "mail.kapsi.fi"
+                       :sent-action delete))))
+
+
+;; this setting allows to re-sync and re-index mail
+;; by pressing U
+(setq mu4e-get-mail-command  "mbsync -a")
 
 ;;; Swagger
 
