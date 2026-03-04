@@ -576,6 +576,23 @@ BL=general (*scratch*)"
 
 
 
+(use-package mu4e
+  :load-path "/usr/share/emacs/site-lisp/elpa-src/mu4e-1.10.8/"
+  :config
+   (setq mail-user-agent 'mu4e-user-agent)
+  
+   (setq mu4e-drafts-folder "/Drafts")
+   (setq mu4e-sent-folder   "/Sent")
+   (setq mu4e-trash-folder  "/Trash")
+   (setq mu4e-maildir "~/Mail")
+   (setq mu4e-user-mail-address-list '("lahtela@iki.fi"))
+   (setq   mu4e-maildir-shortcuts
+        '(("/lahtela@iki.fi/INBOX" . ?i)))
+   (setq mu4e-get-mail-command (concat (executable-find "mbsync") " -a"))
+   (setq mu4e-change-filenames-when-moving t)
+   ;; MBSYNC interval in seconds
+   (setq mu4e-update-interval 300))
+
 (use-package mu4easy
   :ensure t
   :bind ("C-c u" . mu4e)
