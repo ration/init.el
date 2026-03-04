@@ -585,12 +585,15 @@ BL=general (*scratch*)"
       mu4e-update-interval 300
       mu4e-attachment-dir  "~/Downloads"
       mu4e-sent-messages-behavior 'sent)
+   (setq message-sendmail-f-is-evil t)
    (setq mu4e-drafts-folder "/Drafts")
    (setq mu4e-sent-folder   "/Sent")
    (setq mu4e-trash-folder  "/Trash")
    (setq mu4e-user-mail-address-list '("lahtela@iki.fi"))
    (setq   mu4e-maildir-shortcuts
-        '(("/lahtela/INBOX" . ?i)))
+           '(("/lahtela/INBOX" . ?i)))
+   (setq user-mail-address "lahtela@iki.fi"
+      user-full-name    "Tatu Lahtela")
    (setq mu4e-change-filenames-when-moving t)
    ;; MBSYNC interval in seconds
    (setq mu4e-update-interval 300)
