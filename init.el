@@ -587,11 +587,16 @@ BL=general (*scratch*)"
    (setq mu4e-maildir "~/Mail")
    (setq mu4e-user-mail-address-list '("lahtela@iki.fi"))
    (setq   mu4e-maildir-shortcuts
-        '(("/lahtela@iki.fi/INBOX" . ?i)))
+        '(("/lahtela/INBOX" . ?i)))
    (setq mu4e-get-mail-command (concat (executable-find "mbsync") " -a"))
    (setq mu4e-change-filenames-when-moving t)
    ;; MBSYNC interval in seconds
-   (setq mu4e-update-interval 300))
+   (setq mu4e-update-interval 300)
+   (setq sendmail-program (executable-find "msmtp")
+      send-mail-function 'smtpmail-send-it
+      message-sendmail-f-is-evil t
+      message-sendmail-extra-arguments '("--read-envelope-from")
+      message-send-mail-function 'message-send-mail-with-sendmail))
 
 (use-package mu4easy
   :ensure t
