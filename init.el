@@ -580,7 +580,7 @@ BL=general (*scratch*)"
   :load-path "/usr/share/emacs/site-lisp/elpa-src/mu4e-1.10.8/"
   :config
    (setq mail-user-agent 'mu4e-user-agent)
-   (setq mu4e-maildir "~/Mail/lahtela"
+   (setq mu4e-maildir "/home/lahtela/Mail/lahtela"
       mu4e-get-mail-command "mbsync -a"
       mu4e-update-interval 300
       mu4e-attachment-dir  "~/Downloads"
@@ -591,7 +591,7 @@ BL=general (*scratch*)"
    (setq mu4e-trash-folder  "/Trash")
    (setq mu4e-user-mail-address-list '("lahtela@iki.fi"))
    (setq   mu4e-maildir-shortcuts
-           '(("/lahtela/INBOX" . ?i)))
+           '(("/INBOX" . ?i)))
    (setq user-mail-address "lahtela@iki.fi"
       user-full-name    "Tatu Lahtela")
    (setq mu4e-change-filenames-when-moving t)
@@ -603,6 +603,7 @@ BL=general (*scratch*)"
       message-sendmail-extra-arguments '("--read-envelope-from")
       message-send-mail-function 'message-send-mail-with-sendmail))
 
+;; (use-package mu4e-views :ensure t)
 (use-package mu4easy
   :ensure t
   :bind ("C-c u" . mu4e)
