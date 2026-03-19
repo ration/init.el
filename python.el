@@ -104,9 +104,9 @@
                        #'cape-dabbrev)))))
 
 ;; 4. Specific Ruff Integration (Formatting/Linting)
-(use-package lsp-pyright
-  :ensure t
-  :after lsp-mode)
+;;(use-package lsp-pyright
+;;  :ensure t
+;;  :after lsp-mode)
 
 (use-package consult-lsp :ensure t :after lsp-mode)
 
