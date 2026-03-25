@@ -224,7 +224,7 @@
 
 ;;; Python
 
-(load-file (concat user-emacs-directory "python.el"))
+(load-file (concat user-emacs-directory "vanilla-python.el"))
 
 
 ;;; Cape
