@@ -186,8 +186,12 @@
   :init
   (vertico-mode)
   (require 'vertico-directory)
+  (require 'vertico-multiform)
+  (vertico-multiform-mode)
   (keymap-set vertico-map "RET" #'vertico-directory-enter)
-  )
+  :config
+  (setq vertico-multiform-categories
+        '((buffer (vertico-sort-function . nil)))))
 
 ;; 2. Marginalia: Adds the "Rich Annotations" (docstrings, etc.)
 (use-package marginalia
