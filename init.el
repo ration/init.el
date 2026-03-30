@@ -328,19 +328,19 @@
 
 (use-package track-changes)
 
-(use-package copilot
-  :ensure nil
-  :hook (prog-mode . copilot-mode))
-
-(use-package polymode :defer t)
-
-(use-package copilot-chat
-  :vc (:url "https://github.com/chep/copilot-chat.el" :branch "master")
-  :config
-  (setq copilot-chat-default-model "gpt-5.2-codex")
-  (defvar my-copilot-map (make-sparse-keymap))
-  (global-set-key (kbd "C-c a") my-copilot-map)
-  (define-key my-copilot-map (kbd "i") #'copilot-chat-ask-and-insert))
+;; (use-package copilot
+;;   :ensure nil
+;;   :hook (prog-mode . copilot-mode))
+;; 
+;; (use-package polymode :defer t)
+;; 
+;; (use-package copilot-chat
+;;   :vc (:url "https://github.com/chep/copilot-chat.el" :branch "master")
+;;   :config
+;;   (setq copilot-chat-default-model "gpt-5.2-codex")
+;;   (defvar my-copilot-map (make-sparse-keymap))
+;;   (global-set-key (kbd "C-c a") my-copilot-map)
+;;   (define-key my-copilot-map (kbd "i") #'copilot-chat-ask-and-insert))
 
 
 ;;; vterm
