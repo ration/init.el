@@ -77,7 +77,8 @@
                     :weight 'regular
                     :height 110)
 
-(add-to-list 'default-frame-alist '(font . "FiraMono Nerd Font-17"))
+;; (add-to-list 'default-frame-alist '(font . "FiraMono Nerd Font-17"))
+(add-to-list 'default-frame-alist '(font . "IBM Plex Sans-17"))
 
 
 ;;; Rainbow delimiters
@@ -187,7 +188,10 @@
 ;;; org-modern
 
 (use-package org-modern
-  :hook (org-mode . org-modern-mode))
+  :hook (org-mode . org-modern-mode)
+  :config
+  (setq org-modern-star '("●" "○" "•" "◦")))
+
 
 
 ;;; Recent Files (Recentf)
