@@ -78,7 +78,8 @@
                     :height 110)
 
 ;; (add-to-list 'default-frame-alist '(font . "FiraMono Nerd Font-17"))
-(add-to-list 'default-frame-alist '(font . "IBM Plex Sans-17"))
+(add-to-list 'default-frame-alist '(font . "IBM Plex Mono-17")) 
+
 
 
 ;;; Rainbow delimiters
