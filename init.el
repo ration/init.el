@@ -348,6 +348,11 @@
 ;;   (define-key my-copilot-map (kbd "i") #'copilot-chat-ask-and-insert))
 
 
+;;; treesit
+
+(use-package treesit-langs
+  :vc (:url https://github.com/kiennq/treesit-langs.git :rev :newest))
+
 ;;; vterm
 
 (use-package vterm
