@@ -50,11 +50,20 @@
 
 ;;; Outline mode
 
+(defun my-elisp-tab ()
+  "Cycle outline if on a heading, otherwise indent."
+  (interactive)
+  (if (outline-on-heading-p)
+      (outline-cycle)
+    (indent-for-tab-command)))
+
 (use-package emacs
   :ensure nil
   :config
-  (keymap-set emacs-lisp-mode-map "TAB" #'outline-cycle)
-  :hook (emacs-lisp-mode . outline-minor-mode))
+  (keymap-set emacs-lisp-mode-map "TAB" #'my-elisp-tab)
+  :hook (emacs-lisp-mode . outline-minor-mode)
+  :hook (emacs-lisp-mode . (lambda ()
+          (setq-local outline-regexp ";;;[^;]"))))
 
 
 ;;; Theme and fonts
@@ -174,7 +183,9 @@
                               (org-agenda-files :maxlevel . 9)))
   (setq org-outline-path-complete-in-steps nil))
 
-
+(use-package org-appear
+    :hook (org-mode . org-appear-mode)
+  )
 ;;; org-gtasks (from sourcehut)
 
 (use-package deferred :defer t)
