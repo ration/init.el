@@ -200,10 +200,30 @@
 ;;; org-modern
 
 (use-package org-modern
-  :hook (org-mode . org-modern-mode)
-  :config
-  (setq org-modern-star '("●" "○" "•" "◦")))
+  :ensure t
+  :custom
+;;  (org-modern-hide-stars nil)		; adds extra indentation
+  (org-modern-table nil)
+  (org-modern-star 'replace)
+  :hook
+  (org-mode . org-modern-mode)
+  (org-agenda-finalize . org-modern-agenda))
 
+
+;; (use-package org-modern
+;;   :ensure t
+;;   :custom
+;;   (org-modern-hide-stars nil)		; adds extra indentation
+;; ;;  (org-modern-table nil)
+;;   (org-modern-star '("●" "○" "•" "◦"))
+;;   :hook
+;;   (org-mode . org-modern-mode)
+;;   (org-agenda-finalize . org-modern-agenda))
+
+
+(use-package org-modern-indent
+  :vc (:url "https://github.com/jdtsmith/org-modern-indent.git")
+  (add-hook 'org-mode-hook #'org-modern-indent-mode 90))
 
 
 ;;; Recent Files (Recentf)
