@@ -354,11 +354,10 @@
 
 (use-package treesit-langs
   :vc (:url https://github.com/kiennq/treesit-langs.git :rev :newest)
-  :custom
-        (treesit-langs-git-dir nil)
-	(treesit-langs-grammar-dir (expand-file-name "elpa/treesit-langs" user-emacs-directory))
-	(setq treesit-extra-load-path (list treesit-langs-grammar-dir))
-  )
+  :config
+  (setq treesit-langs-git-dir nil)
+  (setq treesit-langs-grammar-dir (expand-file-name "elpa/treesit-langs" user-emacs-directory))
+  (setq treesit-extra-load-path (list treesit-langs-grammar-dir)))
 
 ;;; vterm
 
