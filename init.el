@@ -462,4 +462,11 @@
                              (delete-other-windows)
                              (switch-to-buffer "*Org Agenda*")) 100)
 
-;;; vanilla.el ends here
+;;; Agent shell
+
+(use-package agent-shell
+  :config
+  (add-to-list 'exec-path "/home/lahtela/.nvm/versions/node/v25.6.0/bin/")
+)
+
+;;; init.el ends here
